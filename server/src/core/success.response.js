@@ -7,11 +7,11 @@ class SuccessResponse {
     message,
     statusCode = StatusCodes.OK,
     reasonPhrase = ReasonPhrases.OK,
-    metadata = {},
+    data = {},
   }) {
     this.message = message || reasonPhrase;
     this.status = statusCode;
-    this.metadata = metadata;
+    this.data = data;
   }
 
   send(res, headers = {}) {
@@ -20,8 +20,8 @@ class SuccessResponse {
 }
 
 class OK extends SuccessResponse {
-  constructor({ message, metadata }) {
-    super({ message, metadata });
+  constructor({ message, data }) {
+    super({ message, data });
   }
 }
 
@@ -30,9 +30,9 @@ class CREATED extends SuccessResponse {
     message,
     statusCode = StatusCodes.CREATED,
     reasonPhrase = ReasonPhrases.CREATED,
-    metadata = {},
+    data = {},
   }) {
-    super({ message, statusCode, reasonPhrase, metadata });
+    super({ message, statusCode, reasonPhrase, data });
   }
 }
 

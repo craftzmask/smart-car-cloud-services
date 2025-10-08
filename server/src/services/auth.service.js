@@ -1,27 +1,31 @@
-"use strict";
-
 const UserModel = require("../models/user.model");
 const { NotFoundError } = require("../core/error.response");
 
+const singup = async ({ username, password }) => {
+  const createdUser = await UserModel.create({
+    username,
+    password,
+  });
+
+  return createdUser;
+};
+
 const login = async ({ username, password }) => {
-  const foundUser = await UserModel.findOne({ username, password }).select(
-    "username"
-  );
+  const foundUser = await UserModel.findOne({
+    username,
+    password,
+  });
 
   if (!foundUser) {
-    throw new NotFoundError("User does not exist!");
+    throw new NotFoundError("User not found");
   }
 
   return foundUser;
 };
 
-const signup = async ({ username, password }) => {
-  return await UserModel.create({ username, password });
-};
-
 const AuthService = {
+  singup,
   login,
-  signup,
 };
 
 module.exports = AuthService;

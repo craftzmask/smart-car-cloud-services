@@ -1,20 +1,18 @@
-"use strict";
-
 const AuthService = require("../services/auth.service");
 const { OK, CREATED } = require("../core/success.response");
 
-const login = async (req, res) => {
-  new OK({
-    message: "Login Succesfully",
-    metadata: await AuthService.login(req.body),
-  }).send(res);
+const login = async (request, response) => {
+  return new OK({
+    message: "Login Succesffully",
+    data: await AuthService.login(request.body),
+  }).send(response);
 };
 
-const signup = async (req, res) => {
-  new CREATED({
-    message: "Sign up Successfully",
-    metadata: await AuthService.signup(req.body),
-  }).send(res);
+const signup = async (request, response) => {
+  return new CREATED({
+    message: "Created successfully",
+    data: await AuthService.singup(request.body),
+  }).send(response);
 };
 
 const AuthController = {

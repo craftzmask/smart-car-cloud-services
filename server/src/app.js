@@ -8,6 +8,20 @@ const app = express();
 
 const { StatusCodes, ReasonPhrases } = require("./utils/httpStatusCode");
 
+const middleware = (req, _res, next) => {
+  console.log("Before I go to express.json()");
+  console.log("body::", req.body);
+  next();
+};
+
+const middleware1 = (req, _res, next) => {
+  console.log("After I go to express.json()");
+  console.log("body::", req.body);
+  next();
+};
+
+app.use(middleware);
+
 // init middlewares
 app.use(morgan("dev"));
 app.use(helmet());
@@ -17,6 +31,8 @@ app.use(
     extended: true,
   })
 );
+
+app.use(middleware1);
 
 // init db
 require("./dbs/init.mongodb");
