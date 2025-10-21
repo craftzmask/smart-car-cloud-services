@@ -1,22 +1,62 @@
 {
   "name": "server",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.1.0",
+  "description": "Car Service API with PostgreSQL and MongoDB",
   "main": "index.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "cross-env NODE_ENV=prod node src/server.js",
+    "dev": "cross-env NODE_ENV=dev node --watch src/server.js",
+    "test": "NODE_ENV=test jest",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "db:up": "docker-compose up -d",
+    "db:down": "docker-compose down",
+    "db:reset": "docker-compose down -v && docker-compose up -d",
+    "db:logs:postgres": "docker logs -f car_service_postgres",
+    "db:logs:mongodb": "docker logs -f car_service_mongodb",
+    "db:psql": "docker exec -it car_service_postgres psql -U postgres -d car_service_dev",
+    "db:mongo": "docker exec -it car_service_mongodb mongosh -u admin -p admin123",
+    "db:backup:postgres": "docker exec car_service_postgres pg_dump -U postgres car_service_dev > backup_$(date +%Y%m%d_%H%M%S).sql",
+    "db:backup:mongodb": "docker exec car_service_mongodb mongodump --uri='mongodb://admin:admin123@localhost:27017/dev?authSource=admin' --out=/tmp/backup",
+    "db:health": "npm run db:health:postgres && npm run db:health:mongodb",
+    "db:health:postgres": "docker exec car_service_postgres pg_isready -U postgres",
+    "db:health:mongodb": "docker exec car_service_mongodb mongosh --eval 'db.adminCommand(\"ping\")' -u admin -p admin123 --quiet",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "format": "prettier --write \"src/**/*.js\""
   },
-  "keywords": [],
+  "keywords": [
+    "car-service",
+    "api",
+    "nodejs",
+    "postgresql",
+    "mongodb",
+    "aws",
+    "cognito"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.913.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
-    "mongoose": "^8.19.0",
-    "morgan": "^1.10.1"
+    "mongoose": "^8.19.2",
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "eslint": "^9.38.0",
+    "jest": "^30.2.0",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

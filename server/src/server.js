@@ -1,10 +1,11 @@
 "use strict";
 
 const app = require("./app");
-const process = require("process");
+const logger = require("./utils/logger");
 
 const PORT = process.env.PORT || 8080;
 
+// Start HTTP server
 app.listen(PORT, () => {
-  console.log(`WSV eCommerce start with ${PORT}`);
+  logger.info(`Server listening on port ${PORT}`);
 });

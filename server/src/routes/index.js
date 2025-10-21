@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-router.use("/api/v1", require("./auth"));
+// Mount sub-routers; app.js prefixes with `/api/v1`
+router.use("/auth", require("./auth"));
 
 module.exports = router;
