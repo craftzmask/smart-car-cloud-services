@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: ${POSTGRES_IMAGE:-dattritat/car_service_postgres:dev-snapshot}
     container_name: car_service_postgres
     restart: unless-stopped
     environment:
@@ -22,7 +22,7 @@ services:
       - app_network
 
   mongodb:
-    image: mongo:7-jammy
+    image: ${MONGODB_IMAGE:-dattritat/car_service_mongodb:dev-snapshot}
     container_name: car_service_mongodb
     restart: unless-stopped
     environment:
