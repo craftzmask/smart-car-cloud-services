@@ -1,5 +1,6 @@
 "use strict";
 
+// Gọn nhẹ: chỉ giữ các thao tác thực dùng cho app
 const {
   CognitoIdentityProviderClient,
   SignUpCommand,
@@ -8,22 +9,21 @@ const {
   AdminAddUserToGroupCommand,
   AdminGetUserCommand,
   AdminListGroupsForUserCommand,
-  CreateGroupCommand,
-  ListGroupsCommand,
   AdminRemoveUserFromGroupCommand,
 } = require("@aws-sdk/client-cognito-identity-provider");
+const { CognitoJwtVerifier } = require("aws-jwt-verify");
 const crypto = require("crypto");
 
 class CognitoService {
   constructor() {
-    this.client = new CognitoIdentityProviderClient({
-      region: process.env.AWS_REGION,
-    });
+    this.client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
     this.userPoolId = process.env.AWS_COGNITO_USER_POOL_ID;
-    this.clientId = process.env.AWS_COGNITO_CLIENT_ID;
+    const rawClientId = process.env.AWS_COGNITO_CLIENT_ID;
+    this.clientId = typeof rawClientId === "string" ? rawClientId.trim() || undefined : rawClientId;
     this.clientSecret = process.env.AWS_COGNITO_CLIENT_SECRET;
 
     this.availableGroups = ["user", "admin", "staff"];
+    this.tokenVerifiers = this.initializeTokenVerifiers();
   }
 
   generateSecretHash(username) {
@@ -35,74 +35,62 @@ class CognitoService {
       .digest("base64");
   }
 
-  async initializeGroups() {
-    try {
-      const existingGroups = await this.listGroups();
-      const existingGroupNames = existingGroups.map((g) => g.GroupName);
+  initializeTokenVerifiers() {
+    if (!this.userPoolId) {
+      return null;
+    }
 
-      const groupConfigs = [
-        {
-          GroupName: "admin",
-          Description: "Administrator with full access",
-          Precedence: 1,
-        },
-        {
-          GroupName: "staff",
-          Description: "Staff members with limited admin access",
-          Precedence: 2,
-        },
-        {
-          GroupName: "user",
-          Description: "Regular users",
-          Precedence: 3,
-        },
-      ];
+    const verifiers = {};
 
-      const created = [];
-      for (const config of groupConfigs) {
-        if (!existingGroupNames.includes(config.GroupName)) {
-          await this.createGroup(config);
-          created.push(config.GroupName);
-        }
+    const verifierClientId = typeof this.clientId === "string" ? this.clientId.trim() : this.clientId;
+
+    if (verifierClientId) {
+      verifiers.id = CognitoJwtVerifier.create({
+        userPoolId: this.userPoolId,
+        tokenUse: "id",
+        clientId: verifierClientId,
+      });
+    }
+
+    verifiers.access = CognitoJwtVerifier.create({
+      userPoolId: this.userPoolId,
+      tokenUse: "access",
+      clientId: null,
+    });
+
+    return verifiers;
+  }
+
+  async decodeToken(token) {
+    if (!token) {
+      throw new Error("Authorization token is required");
+    }
+
+    if (!this.tokenVerifiers) {
+      throw new Error("Cognito token verifiers are not configured");
+    }
+
+    const attempts = [
+      { use: "id", verifier: this.tokenVerifiers.id },
+      { use: "access", verifier: this.tokenVerifiers.access },
+    ];
+
+    let lastError = null;
+
+    for (const attempt of attempts) {
+      if (!attempt.verifier) continue;
+
+      try {
+        const payload = await attempt.verifier.verify(token);
+        return { payload, tokenUse: attempt.use };
+      } catch (error) {
+        lastError = error;
       }
-
-      return {
-        message: "Groups initialized successfully",
-        created,
-        existing: existingGroupNames,
-      };
-    } catch (error) {
-      throw this.handleCognitoError(error);
     }
-  }
 
-  async createGroup({ GroupName, Description, Precedence }) {
-    try {
-      const command = new CreateGroupCommand({
-        UserPoolId: this.userPoolId,
-        GroupName,
-        Description,
-        Precedence,
-      });
-
-      const response = await this.client.send(command);
-      return response.Group;
-    } catch (error) {
-      throw this.handleCognitoError(error);
-    }
-  }
-
-  async listGroups() {
-    try {
-      const command = new ListGroupsCommand({
-        UserPoolId: this.userPoolId,
-      });
-
-      const response = await this.client.send(command);
-      return response.Groups || [];
-    } catch (error) {
-      throw this.handleCognitoError(error);
-    }
+    const err = new Error("Invalid or expired token");
+    err.cause = lastError;
+    throw err;
   }
 
   async signUp({ username, password, email, role = "user" }) {
@@ -130,11 +118,8 @@ class CognitoService {
     }
 
     try {
-      // Create user
       const command = new SignUpCommand(params);
       const response = await this.client.send(command);
-
-      // Add user to group
       await this.addUserToGroup(username, role);
 
       return {
@@ -227,10 +212,7 @@ class CognitoService {
       const command = new InitiateAuthCommand(params);
       const response = await this.client.send(command);
 
-      if (!response.AuthenticationResult) {
-        throw new Error("Authentication failed");
-      }
-
+      if (!response.AuthenticationResult) throw new Error("Authentication failed");
       const userDetails = await this.getUserDetails(username);
 
       return {
@@ -262,17 +244,13 @@ class CognitoService {
       const userResponse = await this.client.send(userCommand);
       const groups = await this.getUserGroups(username);
 
-      const attributes = {};
-      userResponse.UserAttributes.forEach((attr) => {
-        const key = attr.Name.replace("custom:", "");
-        attributes[key] = attr.Value;
-      });
+      const attributes = userResponse.UserAttributes.reduce((acc, attr) => {
+        acc[attr.Name.replace("custom:", "")] = attr.Value;
+        return acc;
+      }, {});
 
       let primaryRole = "user";
-      if (groups.length > 0) {
-        const sortedGroups = groups.sort((a, b) => a.Precedence - b.Precedence);
-        primaryRole = sortedGroups[0].GroupName;
-      }
+      if (groups.length > 0) primaryRole = groups.sort((a, b) => a.Precedence - b.Precedence)[0].GroupName;
 
       return {
         username: userResponse.Username,
@@ -296,11 +274,7 @@ class CognitoService {
 
     try {
       const currentGroups = await this.getUserGroups(username);
-
-      for (const group of currentGroups) {
-        await this.removeUserFromGroup(username, group.GroupName);
-      }
-
+      for (const group of currentGroups) await this.removeUserFromGroup(username, group.GroupName);
       await this.addUserToGroup(username, newRole);
 
       return {
@@ -328,8 +302,7 @@ class CognitoService {
       ResourceNotFoundException: "Group not found",
     };
 
-    const message =
-      errorMap[error.name] || error.message || "Authentication error";
+    const message = errorMap[error.name] || error.message || "Authentication error";
 
     const customError = new Error(message);
     customError.name = error.name;

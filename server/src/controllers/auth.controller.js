@@ -2,10 +2,9 @@
 
 const AuthService = require("../services/auth.service");
 const { OK, CREATED } = require("../core/success.response");
-const { BadRequestError } = require("../core/error.response");
+const { BadRequestError, AuthFailureError } = require("../core/error.response");
 
 class AuthController {
-  // Handle user signup
   /**
    * User signup
    * Public endpoint - no authentication required
@@ -32,7 +31,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Handle user login
   /**
    * User login
    * Public endpoint - no authentication required
@@ -54,17 +52,23 @@ class AuthController {
     }).send(response);
   }
 
-  // Provide user profile data
   /**
-   * Get user profile
+   * Get authenticated user profile
    * Protected endpoint - requires authentication
-   * API Gateway ensures user is authenticated
-   * GET /api/v1/profile/:username
+   * GET /api/v1/profile
    */
   async getProfile(request, response) {
-    const { username } = request.params;
+    const requester = request.user;
 
-    const result = await AuthService.getUserProfile(username);
+    if (!requester || !requester.username) {
+      throw new AuthFailureError("Authentication required");
+    }
+
+    const result = await AuthService.getUserProfile({
+      username: requester.username,
+      cognitoUsername: requester.cognitoUsername,
+      sub: requester.sub,
+    });
 
     return new OK({
       message: "Profile retrieved successfully",
@@ -72,7 +76,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Change user role
   /**
    * Update user role
    * Protected endpoint - requires authentication
@@ -95,7 +98,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Deactivate user account
   /**
    * Deactivate user account
    * Protected endpoint - requires admin authentication
@@ -112,7 +114,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Activate user account
   /**
    * Activate user account
    * Protected endpoint - requires admin authentication
@@ -129,7 +130,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Return active users
   /**
    * Get all active users
    * Protected endpoint - requires admin authentication
@@ -144,7 +144,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Return users filtered by role
   /**
    * Get users by role
    * Protected endpoint - requires admin authentication

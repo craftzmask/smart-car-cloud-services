@@ -13,9 +13,9 @@ router.post("/signup", asyncErrorHandler(AuthController.signup));
 // User login
 router.post("/login", asyncErrorHandler(AuthController.login));
 
-// Get user profile
+// Get current user profile
 router.get(
-  "/profile/:username",
+  "/profile",
   authenticate,
   asyncErrorHandler(AuthController.getProfile)
 );
