@@ -14,142 +14,158 @@ const IoTDeviceType = require("./iotDeviceType.model");
 const NotificationType = require("./notificationType.model");
 const Subscription = require("./subscription.model");
 const ServiceConfiguration = require("./serviceConfiguration.model");
-
+const AlertThreshold = require("./alertThreshold.model");
 
 // User -> Car (One-to-Many)
 User.hasMany(Car, {
-  foreignKey: "userId",
-  as: "cars",
-  onDelete: "CASCADE",
+    foreignKey: "userId",
+    as: "cars",
+    onDelete: "CASCADE",
 });
 Car.belongsTo(User, {
-  foreignKey: "userId",
-  as: "owner",
+    foreignKey: "userId",
+    as: "owner",
 });
 
 // User -> IoTDevice (One-to-Many)
 User.hasMany(IoTDevice, {
-  foreignKey: "userId",
-  as: "devices",
-  onDelete: "CASCADE",
+    foreignKey: "userId",
+    as: "devices",
+    onDelete: "CASCADE",
 });
 IoTDevice.belongsTo(User, {
-  foreignKey: "userId",
-  as: "owner",
+    foreignKey: "userId",
+    as: "owner",
 });
 
 // User -> Subscription (One-to-One)
 User.hasOne(Subscription, {
-  foreignKey: "userId",
-  as: "subscription",
-  onDelete: "CASCADE",
+    foreignKey: "userId",
+    as: "subscription",
+    onDelete: "CASCADE",
 });
 Subscription.belongsTo(User, {
-  foreignKey: "userId",
-  as: "user",
+    foreignKey: "userId",
+    as: "user",
 });
 
 // User -> ServiceConfiguration (One-to-One)
 User.hasOne(ServiceConfiguration, {
-  foreignKey: "userId",
-  as: "serviceConfiguration",
-  onDelete: "CASCADE",
+    foreignKey: "userId",
+    as: "serviceConfiguration",
+    onDelete: "CASCADE",
 });
 ServiceConfiguration.belongsTo(User, {
-  foreignKey: "userId",
-  as: "user",
+    foreignKey: "userId",
+    as: "user",
 });
 
 // Car -> Alert (One-to-Many)
 Car.hasMany(Alert, {
-  foreignKey: "carId",
-  as: "alerts",
-  onDelete: "CASCADE",
+    foreignKey: "carId",
+    as: "alerts",
+    onDelete: "CASCADE",
 });
 Alert.belongsTo(Car, {
-  foreignKey: "carId",
-  as: "car",
+    foreignKey: "carId",
+    as: "car",
 });
 
 // Car -> IoTDevice (One-to-Many)
 Car.hasMany(IoTDevice, {
-  foreignKey: "carId",
-  as: "devices",
-  onDelete: "SET NULL",
+    foreignKey: "carId",
+    as: "devices",
+    onDelete: "SET NULL",
 });
 IoTDevice.belongsTo(Car, {
-  foreignKey: "carId",
-  as: "car",
+    foreignKey: "carId",
+    as: "car",
 });
 
 // Car -> CarTracking (One-to-Many)
 Car.hasMany(CarTracking, {
-  foreignKey: "carId",
-  as: "trackingHistory",
-  onDelete: "CASCADE",
+    foreignKey: "carId",
+    as: "trackingHistory",
+    onDelete: "CASCADE",
 });
 CarTracking.belongsTo(Car, {
-  foreignKey: "carId",
-  as: "car",
+    foreignKey: "carId",
+    as: "car",
 });
 
 // Alert -> AlertType (Many-to-One)
 AlertType.hasMany(Alert, {
-  foreignKey: "alertType",
-  as: "alerts",
-  onDelete: "RESTRICT",
+    foreignKey: "alertType",
+    as: "alerts",
+    onDelete: "RESTRICT",
 });
 Alert.belongsTo(AlertType, {
-  foreignKey: "alertType",
-  as: "type",
-  targetKey: "type",
+    foreignKey: "alertType",
+    as: "type",
+    targetKey: "type",
 });
 
 // Alert -> AlertStatusEnum (Many-to-One)
 AlertStatusEnum.hasMany(Alert, {
-  foreignKey: "status",
-  as: "alerts",
-  onDelete: "RESTRICT",
+    foreignKey: "status",
+    as: "alerts",
+    onDelete: "RESTRICT",
 });
 Alert.belongsTo(AlertStatusEnum, {
-  foreignKey: "status",
-  as: "statusInfo",
-  targetKey: "status",
+    foreignKey: "status",
+    as: "statusInfo",
+    targetKey: "status",
 });
 
 // Alert -> User (acknowledged_by)
 User.hasMany(Alert, {
-  foreignKey: "acknowledgedBy",
-  as: "acknowledgedAlerts",
-  onDelete: "SET NULL",
+    foreignKey: "acknowledgedBy",
+    as: "acknowledgedAlerts",
+    onDelete: "SET NULL",
 });
 Alert.belongsTo(User, {
-  foreignKey: "acknowledgedBy",
-  as: "acknowledger",
+    foreignKey: "acknowledgedBy",
+    as: "acknowledger",
 });
 
 // IoTDevice -> IoTDeviceType (Many-to-One)
 IoTDeviceType.hasMany(IoTDevice, {
-  foreignKey: "deviceType",
-  as: "devices",
-  onDelete: "RESTRICT",
+    foreignKey: "deviceType",
+    as: "devices",
+    onDelete: "RESTRICT",
 });
 IoTDevice.belongsTo(IoTDeviceType, {
-  foreignKey: "deviceType",
-  as: "type",
-  targetKey: "type",
+    foreignKey: "deviceType",
+    as: "type",
+    targetKey: "type",
+});
+
+// AlertType ↔ AlertThreshold (1:1)
+AlertType.hasOne(AlertThreshold, {
+    foreignKey: "alertType",
+    as: "threshold",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+});
+
+AlertThreshold.belongsTo(AlertType, {
+    foreignKey: "alertType",
+    as: "type",
+    targetKey: "type",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
 });
 
 module.exports = {
-  User,
-  Car,
-  Alert,
-  AlertType,
-  AlertStatusEnum,
-  CarTracking,
-  IoTDevice,
-  IoTDeviceType,
-  NotificationType,
-  Subscription,
-  ServiceConfiguration,
+    User,
+    Car,
+    Alert,
+    AlertType,
+    AlertStatusEnum,
+    CarTracking,
+    IoTDevice,
+    IoTDeviceType,
+    NotificationType,
+    Subscription,
+    ServiceConfiguration,
 };
