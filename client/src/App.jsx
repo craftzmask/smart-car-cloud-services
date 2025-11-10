@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./utils/queryClient";
 import { AuthProvider } from "./contexts/AuthContext";
-import StatusIndicator from "./components/common/StatusIndicator";
+import AlertBadge from "./components/common/AlertBadge";
 
 const App = () => {
   return (
@@ -26,7 +26,7 @@ const App = () => {
                         fontWeight: "bold",
                       }}
                     >
-                      <StatusIndicator />
+                      <AlertBadge />
                     </div>
                   }
                 />
