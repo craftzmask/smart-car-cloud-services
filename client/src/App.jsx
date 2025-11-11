@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./utils/queryClient";
 import { AuthProvider } from "./contexts/AuthContext";
-import AlertBadge from "./components/common/AlertBadge";
+import StatCard from "./components/common/StatCard";
 
 const App = () => {
   return (
@@ -26,7 +26,7 @@ const App = () => {
                         fontWeight: "bold",
                       }}
                     >
-                      <AlertBadge />
+                      <StatCard label="hello" value="world" trend="up" />
                     </div>
                   }
                 />
