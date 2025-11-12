@@ -1,10 +1,9 @@
 "use strict";
 
-const {Op} = require("sequelize");
 const AlertThreshold = require("../models/sql/alertThreshold.model");
 const AlertType = require("../models/sql/alertType.model"); // to pre-check FK existence
 
-// helper: normalize DECIMAL to number in JSON responses
+
 function toPlain(thresholdInstance) {
     if (!thresholdInstance) return null;
     const obj = thresholdInstance.toJSON();
@@ -13,33 +12,25 @@ function toPlain(thresholdInstance) {
 }
 
 module.exports = {
-    /**
-     * List thresholds with optional pagination/sorting
-     */
+
     async list({limit = 50, offset = 0, order = [["alertType", "ASC"]]} = {}) {
         const rows = await AlertThreshold.findAll({limit, offset, order});
         return rows.map(toPlain);
     },
 
-    /**
-     * Get one by id (primary key)
-     */
+
     async getById(id) {
         const row = await AlertThreshold.findByPk(id);
         return toPlain(row);
     },
 
-    /**
-     * Get one by alertType (unique)
-     */
+
     async getByType(alertType) {
         const row = await AlertThreshold.findByAlertType(alertType);
         return toPlain(row);
     },
 
-    /**
-     * Create new
-     */
+
     async create({alertType, minThreshold}) {
         // 1) Presence checks
         if (!alertType || typeof alertType !== "string") {
@@ -85,9 +76,7 @@ module.exports = {
         }
     },
 
-    /**
-     * Update by id (partial or full)
-     */
+
     async updateById(id, {alertType, minThreshold} = {}) {
         const row = await AlertThreshold.findByPk(id);
         if (!row) {
@@ -120,7 +109,7 @@ module.exports = {
         }
 
         try {
-            await row.save(); // runs model validators (min/max, enum, unique constraint)
+            await row.save();
             return toPlain(row);
         } catch (err) {
             if (err.name === "SequelizeUniqueConstraintError") {
@@ -144,22 +133,4 @@ module.exports = {
         return {deleted: count > 0};
     },
 
-    /**
-     * Optional: search by type prefix (handy for UIs)
-     */
-    async searchByTypePrefix(prefix, {limit = 20} = {}) {
-        const rows = await AlertThreshold.findAll({
-            where: {alertType: {[Op.iLike]: `${prefix}%`}}, // For MySQL use Op.like
-            limit,
-            order: [["alertType", "ASC"]],
-        });
-        return rows.map(toPlain);
-    },
-
-    /**
-     * Optional: stats (uses your model method)
-     */
-    async stats() {
-        return AlertThreshold.getStats();
-    },
 };

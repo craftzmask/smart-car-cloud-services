@@ -5,12 +5,7 @@ const {OK, CREATED} = require("../core/success.response");
 const {BadRequestError} = require("../core/error.response");
 
 class AlertThresholdController {
-    // List thresholds
-    /**
-     * List alert thresholds
-     * Protected endpoint - requires authentication
-     * GET /api/v1/alert-thresholds?limit=&offset=
-     */
+
     async list(request, response) {
         const limit = request.query.limit ? parseInt(request.query.limit, 10) : undefined;
         const offset = request.query.offset ? parseInt(request.query.offset, 10) : undefined;
@@ -23,12 +18,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // Get by id
-    /**
-     * Get alert threshold by id
-     * Protected endpoint - requires authentication
-     * GET /api/v1/alert-thresholds/:id
-     */
     async getById(request, response) {
         const {id} = request.params;
 
@@ -43,12 +32,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // Get by alertType
-    /**
-     * Get alert threshold by alert type
-     * Protected endpoint - requires authentication
-     * GET /api/v1/alert-thresholds/type/:alertType
-     */
     async getByType(request, response) {
         const {alertType} = request.params;
 
@@ -63,13 +46,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // Create
-    /**
-     * Create alert threshold
-     * Protected endpoint - requires authentication
-     * POST /api/v1/alert-thresholds
-     * body: { alertType: string, minThreshold: number }
-     */
     async create(request, response) {
         const {alertType, minThreshold} = request.body || {};
 
@@ -91,13 +67,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // Update (full)
-    /**
-     * Update alert threshold by id (full)
-     * Protected endpoint - requires authentication
-     * PUT /api/v1/alert-thresholds/:id
-     * body: { alertType: string, minThreshold: number }
-     */
     async update(request, response) {
         const {id} = request.params;
         const {alertType, minThreshold} = request.body || {};
@@ -120,13 +89,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // Partial update
-    /**
-     * Partially update alert threshold by id
-     * Protected endpoint - requires authentication
-     * PATCH /api/v1/alert-thresholds/:id
-     * body: { alertType?: string, minThreshold?: number }
-     */
     async patch(request, response) {
         const {id} = request.params;
         const {alertType, minThreshold} = request.body || {};
@@ -146,12 +108,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // Delete
-    /**
-     * Delete alert threshold by id
-     * Protected endpoint - requires authentication
-     * DELETE /api/v1/alert-thresholds/:id
-     */
     async delete(request, response) {
         const {id} = request.params;
 
@@ -166,20 +122,6 @@ class AlertThresholdController {
         }).send(response);
     }
 
-    // (Optional) Stats
-    /**
-     * Get thresholds statistics
-     * Protected endpoint - requires authentication
-     * GET /api/v1/alert-thresholds/stats
-     */
-    async stats(request, response) {
-        const data = await AlertThresholdService.stats();
-
-        return new OK({
-            message: "Alert thresholds statistics retrieved successfully",
-            data,
-        }).send(response);
-    }
 }
 
 module.exports = new AlertThresholdController();
