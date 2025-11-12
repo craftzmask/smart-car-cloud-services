@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   postgres:
-    image: ${POSTGRES_IMAGE:-dattritat/car_service_postgres:dev-snapshot}
+    image: postgres:16-alpine
     platform: linux/amd64
     container_name: car_service_postgres
     restart: unless-stopped

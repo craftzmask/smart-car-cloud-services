@@ -141,6 +141,98 @@ class AuthService {
     }
   }
 
+  // Confirm signup using a verification code
+  async confirmSignUp({ username, code }) {
+    try {
+      if (!username || !code) {
+        throw new BadRequestError("Username and code are required");
+      }
+
+      const inputIsEmail = /.+@.+\..+/.test(username);
+      let primary = username;
+      let alternate = null;
+
+      if (!inputIsEmail) {
+        const local = await User.findByUsername(username);
+        if (local?.email) {
+          primary = local.email; // try email first (newer signups)
+          alternate = username; // fallback to raw username (older signups)
+        }
+      } else {
+        // If input is email, still try fallback to username from DB if exists
+        const localByEmail = await User.findByEmail(username);
+        if (localByEmail?.username) {
+          alternate = localByEmail.username;
+        }
+      }
+
+      let result;
+      try {
+        result = await CognitoService.confirmSignUp({ username: primary, code });
+      } catch (err) {
+        if (alternate) {
+          result = await CognitoService.confirmSignUp({ username: alternate, code });
+        } else {
+          throw err;
+        }
+      }
+
+      // Mark local user as verified if found
+      const localUser = inputIsEmail
+        ? await User.findByEmail(username)
+        : await User.findByUsername(username);
+      if (localUser) {
+        localUser.emailVerified = true;
+        await localUser.save();
+      }
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Resend confirmation code
+  async resendConfirmation({ username }) {
+    try {
+      if (!username) {
+        throw new BadRequestError("Username is required");
+      }
+
+      const inputIsEmail = /.+@.+\..+/.test(username);
+      let primary = username;
+      let alternate = null;
+
+      if (!inputIsEmail) {
+        const local = await User.findByUsername(username);
+        if (local?.email) {
+          primary = local.email; // try email first
+          alternate = username; // fallback to raw username
+        }
+      } else {
+        const localByEmail = await User.findByEmail(username);
+        if (localByEmail?.username) {
+          alternate = localByEmail.username;
+        }
+      }
+
+      let result;
+      try {
+        result = await CognitoService.resendConfirmationCode({ username: primary });
+      } catch (err) {
+        if (alternate) {
+          result = await CognitoService.resendConfirmationCode({ username: alternate });
+        } else {
+          throw err;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Retrieve user profile information
   async getUserProfile(input) {
     try {

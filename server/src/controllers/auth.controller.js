@@ -8,7 +8,7 @@ class AuthController {
   /**
    * User signup
    * Public endpoint - no authentication required
-   * POST /api/v1/signup
+   * POST /api/v1/auth/signup
    */
   async signup(request, response) {
     const { username, password, email, role } = request.body;
@@ -34,7 +34,7 @@ class AuthController {
   /**
    * User login
    * Public endpoint - no authentication required
-   * POST /api/v1/login
+   * POST /api/v1/auth/login
    */
   async login(request, response) {
     const { username, password } = request.body;
@@ -49,6 +49,46 @@ class AuthController {
     return new OK({
       message: "Login successful",
       data: result,
+    }).send(response);
+  }
+
+  /**
+   * Confirm user signup
+   * Public endpoint - no authentication required
+   * POST /api/v1/auth/confirm
+   */
+  async confirm(request, response) {
+    const { username, code } = request.body || {};
+
+    if (!username || !code) {
+      throw new BadRequestError("Username and code are required");
+    }
+
+    const result = await AuthService.confirmSignUp({ username, code });
+
+    return new OK({
+      message: result.message || "Account confirmed successfully",
+      data: null,
+    }).send(response);
+  }
+
+  /**
+   * Resend confirmation code
+   * Public endpoint - no authentication required
+   * POST /api/v1/auth/resend
+   */
+  async resend(request, response) {
+    const { username } = request.body || {};
+
+    if (!username) {
+      throw new BadRequestError("Username is required");
+    }
+
+    const result = await AuthService.resendConfirmation({ username });
+
+    return new OK({
+      message: result.message || "Verification code resent successfully",
+      data: null,
     }).send(response);
   }
 

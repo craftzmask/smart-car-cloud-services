@@ -5,7 +5,9 @@ const {
   CognitoIdentityProviderClient,
   SignUpCommand,
   InitiateAuthCommand,
+  ConfirmSignUpCommand,
   AdminConfirmSignUpCommand,
+  ResendConfirmationCodeCommand,
   AdminAddUserToGroupCommand,
   AdminGetUserCommand,
   AdminListGroupsForUserCommand,
@@ -94,6 +96,13 @@ class CognitoService {
   }
 
   async signUp({ username, password, email, role = "user" }) {
+    if (!this.clientId) {
+      const e = new Error("Cognito ClientId is not configured");
+      e.name = "InvalidConfiguration";
+      e.statusCode = 500;
+      e.status = 500;
+      throw e;
+    }
     if (!this.availableGroups.includes(role)) {
       throw new Error(
         `Invalid role. Must be one of: ${this.availableGroups.join(", ")}`
@@ -194,6 +203,13 @@ class CognitoService {
   }
 
   async login({ username, password }) {
+    if (!this.clientId) {
+      const e = new Error("Cognito ClientId is not configured");
+      e.name = "InvalidConfiguration";
+      e.statusCode = 500;
+      e.status = 500;
+      throw e;
+    }
     const params = {
       AuthFlow: "USER_PASSWORD_AUTH",
       ClientId: this.clientId,
@@ -307,8 +323,68 @@ class CognitoService {
     const customError = new Error(message);
     customError.name = error.name;
     customError.statusCode = error.$metadata?.httpStatusCode || 400;
+    // Align with global error handler which reads `error.status`
+    customError.status = customError.statusCode;
+    // Preserve raw provider message for diagnostics
+    customError.details = error.message;
 
     return customError;
+  }
+
+  async confirmSignUp({ username, code }) {
+    if (!this.clientId) {
+      const e = new Error("Cognito ClientId is not configured");
+      e.name = "InvalidConfiguration";
+      e.statusCode = 500;
+      e.status = 500;
+      throw e;
+    }
+
+    const params = {
+      ClientId: this.clientId,
+      Username: username,
+      ConfirmationCode: code,
+    };
+
+    const secretHash = this.generateSecretHash(username);
+    if (secretHash) params.SecretHash = secretHash;
+
+    try {
+      const command = new ConfirmSignUpCommand(params);
+      await this.client.send(command);
+      return { message: "Account confirmed successfully" };
+    } catch (error) {
+      throw this.handleCognitoError(error);
+    }
+  }
+
+  async resendConfirmationCode({ username }) {
+    if (!this.clientId) {
+      const e = new Error("Cognito ClientId is not configured");
+      e.name = "InvalidConfiguration";
+      e.statusCode = 500;
+      e.status = 500;
+      throw e;
+    }
+
+    const params = {
+      ClientId: this.clientId,
+      Username: username,
+    };
+
+    const secretHash = this.generateSecretHash(username);
+    if (secretHash) params.SecretHash = secretHash;
+
+    try {
+      const command = new ResendConfirmationCodeCommand(params);
+      const response = await this.client.send(command);
+      return {
+        message: "Verification code resent successfully",
+        delivery: response.CodeDeliveryDetails || null,
+      };
+    } catch (error) {
+      throw this.handleCognitoError(error);
+    }
   }
 }
 

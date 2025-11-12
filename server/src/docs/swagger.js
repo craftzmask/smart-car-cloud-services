@@ -17,8 +17,8 @@ const components = {
       properties: {
         username: {
           type: "string",
-          description: "Username the user will sign in with (email when Cognito is configured for email sign-in)",
-          example: "alice@example.com",
+          description: "Username the user will sign in with (distinct from email)",
+          example: "alice",
         },
         password: {
           type: "string",
@@ -64,8 +64,8 @@ const components = {
       properties: {
         username: {
           type: "string",
-          description: "Username/email used during signup",
-          example: "alice@example.com",
+          description: "Username used during signup (not email)",
+          example: "alice",
         },
         password: {
           type: "string",
@@ -108,6 +108,33 @@ const components = {
               },
             },
           },
+        },
+      },
+    },
+    ConfirmSignupRequest: {
+      type: "object",
+      required: ["username", "code"],
+      properties: {
+        username: {
+          type: "string",
+          description: "Username used during signup (or email if pool uses email sign-in)",
+          example: "alice",
+        },
+        code: {
+          type: "string",
+          description: "Verification code received via email",
+          example: "123456",
+        },
+      },
+    },
+    ResendConfirmationRequest: {
+      type: "object",
+      required: ["username"],
+      properties: {
+        username: {
+          type: "string",
+          description: "Username used during signup (or email if pool uses email sign-in)",
+          example: "alice",
         },
       },
     },
@@ -249,4 +276,3 @@ module.exports = {
   components,
   paths,
 };
-

@@ -24,17 +24,12 @@ const prod = {
     port: process.env.PROD_APP_PORT || 3000,
   },
   db: {
-    uri:
-      process.env.PROD_MONGODB_URI ||
-      `mongodb://${process.env.PROD_MONGODB_HOST || "localhost"}:${process.env.PROD_MONGODB_PORT || "27017"}/${process.env.PROD_MONGODB_NAME || "prod"}`,
+    uri: process.env.PROD_MONGODB_URI,
     options: {
       maxPoolSize: 50,
       minPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      ssl: process.env.PROD_MONGODB_SSL === "true",
-      tls: process.env.PROD_MONGODB_SSL === "true",
-      retryWrites: false,
     },
   },
 };
