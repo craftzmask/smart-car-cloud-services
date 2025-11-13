@@ -14,6 +14,9 @@ const { version: APP_VERSION } = require("../package.json");
 
 const { StatusCodes, ReasonPhrases } = require("./utils/httpStatusCode");
 
+// Pretty-print JSON in non-production for easier debugging
+const ENV = (process.env.NODE_ENV || "dev").toLowerCase();
+
 // CORS configuration
 const corsOptions = {
   origin: process.env.CORS_ORIGIN || "*",
@@ -76,7 +79,11 @@ app.get("/health", (_req, res) => {
 });
 
 // API docs
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, { explorer: true })
+);
 
 // API routes
 app.use("/api/v1", require("./routes"));
@@ -104,8 +111,9 @@ app.use((_req, _res, next) => {
 
 // Global error handler
 app.use((error, _req, res, _next) => {
-  const statusCode = error.status || StatusCodes.INTERNAL_SERVER_ERROR;
-  
+  const statusCode =
+    error.status || error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
+
   // Log error only in non-production to avoid noisy logs
   if (process.env.NODE_ENV !== "production") {
     logger.error("Unhandled error", error);
@@ -115,14 +123,17 @@ app.use((error, _req, res, _next) => {
     status: "Error",
     code: statusCode,
     message: error.message || ReasonPhrases.INTERNAL_SERVER_ERROR,
-    ...(process.env.NODE_ENV === "dev" && { stack: error.stack }),
+    ...(process.env.NODE_ENV === "dev" && {
+      details: error.details,
+      stack: error.stack,
+    }),
   });
 });
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   logger.warn("SIGTERM received, shutting down gracefully...");
-  
+
   try {
     const database = require("./dbs/init.database");
     await database.disconnect();
@@ -130,7 +141,7 @@ process.on("SIGTERM", async () => {
   } catch (error) {
     logger.error("Error during shutdown:", error);
   }
-  
+
   process.exit(0);
 });
 

@@ -44,12 +44,45 @@ class Database {
       await this.sequelize.authenticate();
       logger.info("PostgreSQL connection established successfully");
 
-      if (env === "dev") {
-        // Load all SQL models before sync
-        require("../models/sql");
-        
-        await this.sequelize.sync({ alter: false, logging: false });
-        logger.debug("Database synced - tables ready");
+      // Load all SQL models before sync
+      require("../models/sql");
+      logger.debug(
+        `Models loaded: ${Object.keys(this.sequelize.models).join(", ")}`
+      );
+
+      // Determine if we should sync the database
+      // Dev: Always sync with alter
+      // Prod: Only sync if DB_SYNC=true (for initial setup)
+      const shouldSync = env === "dev" || process.env.DB_SYNC === "true";
+
+      if (shouldSync) {
+        const syncOptions = {
+          // alter: true allows updating existing tables (use with caution in prod!)
+          // alter: false only creates new tables, doesn't modify existing ones
+          alter: env === "dev", // Only allow alter in dev
+          logging: env === "dev" ? console.log : false,
+        };
+
+        logger.info(`Syncing database...`, {
+          environment: env,
+          alter: syncOptions.alter,
+        });
+
+        await this.sequelize.sync(syncOptions);
+
+        logger.info("✓ Database synced successfully - tables ready");
+
+        // Log tables that were synced
+        if (env === "dev") {
+          const models = Object.keys(this.sequelize.models);
+          logger.debug(
+            `Synced ${models.length} model(s): ${models.join(", ")}`
+          );
+        }
+      } else {
+        logger.info(
+          "Database sync skipped (set DB_SYNC=true to enable in production)"
+        );
       }
 
       return this.sequelize;

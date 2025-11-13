@@ -19,9 +19,9 @@ class Database {
         mongoose.set("debug", true);
         mongoose.set("debug", { color: true });
       }
-
+      console.log(config.db.uri);
       await mongoose.connect(config.db.uri, config.db.options);
-      
+
       this.isConnected = true;
       logger.info("MongoDB connected successfully");
       logger.debug(`URI: ${this.maskPassword(config.db.uri)}`);
@@ -46,7 +46,6 @@ class Database {
         logger.warn("MongoDB connection closed through app termination");
         process.exit(0);
       });
-
     } catch (error) {
       this.isConnected = false;
       logger.error("MongoDB connection failed:", error.message);
@@ -77,7 +76,7 @@ class Database {
   // Helper to mask password in connection string for logging
   maskPassword(uri) {
     try {
-      return uri.replace(/:([^:@]+)@/, ':****@');
+      return uri.replace(/:([^:@]+)@/, ":****@");
     } catch {
       return uri;
     }
