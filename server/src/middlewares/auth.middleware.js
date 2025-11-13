@@ -1,63 +1,61 @@
 "use strict";
 
-// Authentication middleware collection
-// - extractUser: from API Gateway headers (production path)
-// - extractUserLocal: from unsigned JWT (development only)
-// - authenticate: auto-detects and chooses the appropriate strategy
-// - logUser: optional request-scoped user debug log
 const logger = require("../utils/logger");
+const CognitoService = require("../services/cognito.service");
 
-// Extract user details from API Gateway headers
-// Attaches req.user = { username, email, sub, groups, role }
-const extractUser = (req, res, next) => {
+const decodeJwtPayload = (token) => {
   try {
-    const username = req.headers["x-cognito-username"];
-    const email = req.headers["x-cognito-email"];
-    const sub = req.headers["x-cognito-sub"];
-    const groupsHeader = req.headers["x-cognito-groups"];
-
-    if (!username) {
-      return res.status(401).json({
-        status: "Error",
-        code: 401,
-        message: "Authentication required",
-      });
-    }
-
-    const groups = groupsHeader ? groupsHeader.split(",").map((g) => g.trim()) : [];
-
-    let primaryRole = "user";
-    if (groups.includes("admin")) {
-      primaryRole = "admin";
-    } else if (groups.includes("staff")) {
-      primaryRole = "staff";
-    }
-
-    req.user = {
-      username,
-      email,
-      sub,
-      groups,
-      role: primaryRole,
-    };
-
-    next();
-  } catch (error) {
-    logger.error("Error extracting user", error);
-    return res.status(500).json({
-      status: "Error",
-      code: 500,
-      message: "Failed to process authentication",
-    });
+    const part = token?.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = Buffer.from(b64, "base64").toString();
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
   }
 };
 
-// Extract user details from a local JWT for development (no verification)
-const extractUserLocal = (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
+const buildUser = (payload) => {
+  const groups = payload["cognito:groups"] || payload.groups || [];
+  const role = groups.includes("admin")
+    ? "admin"
+    : groups.includes("staff")
+      ? "staff"
+      : "user";
+  const cognitoUsername =
+    payload["cognito:username"] || payload.username || payload.sub;
+  const email = payload.email || payload["custom:email"];
+  return {
+    username: (cognitoUsername || email || "").toLowerCase(),
+    email: email || null,
+    sub: payload.sub,
+    groups,
+    role,
+    cognitoUsername,
+  };
+};
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+const authenticate = async (req, res, next) => {
+  try {
+    const gwUsername = req.headers["x-cognito-username"];
+    if (gwUsername) {
+      const groupsHeader = req.headers["x-cognito-groups"];
+      const payload = {
+        "cognito:username": gwUsername,
+        "cognito:groups": groupsHeader
+          ? String(groupsHeader)
+              .split(",")
+              .map((g) => g.trim())
+          : [],
+        email: req.headers["x-cognito-email"],
+        sub: req.headers["x-cognito-sub"],
+      };
+      req.user = buildUser(payload);
+      return next();
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         status: "Error",
         code: 401,
@@ -66,74 +64,38 @@ const extractUserLocal = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      Buffer.from(base64, "base64")
-        .toString()
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-
-    const decoded = JSON.parse(jsonPayload);
-    const groups = decoded["cognito:groups"] || [];
-
-    let primaryRole = "user";
-    if (groups.includes("admin")) {
-      primaryRole = "admin";
-    } else if (groups.includes("staff")) {
-      primaryRole = "staff";
+    try {
+      const { payload } = await CognitoService.decodeToken(token);
+      req.user = buildUser(payload);
+      return next();
+    } catch (err) {
+      const allowFallback =
+        err?.cause?.name === "ParameterValidationError" ||
+        err?.message === "Cognito token verifiers are not configured";
+      if (allowFallback) {
+        const payload = decodeJwtPayload(token);
+        if (payload) {
+          logger.warn(
+            "JWT verified disabled; decoded payload without signature (dev only)"
+          );
+          req.user = buildUser(payload);
+          return next();
+        }
+      }
+      return res.status(401).json({
+        status: "Error",
+        code: 401,
+        message: "Invalid or expired token",
+      });
     }
-
-    req.user = {
-      username: decoded["cognito:username"] || decoded.username,
-      email: decoded.email,
-      sub: decoded.sub,
-      groups,
-      role: primaryRole,
-    };
-
-    next();
   } catch (error) {
-    logger.warn("Error decoding token in local mode", error);
-    return res.status(401).json({
+    logger.error("Auth middleware error", error);
+    return res.status(500).json({
       status: "Error",
-      code: 401,
-      message: "Invalid token",
+      code: 500,
+      message: "Failed to process authentication",
     });
   }
 };
 
-// Choose the right extraction strategy
-const authenticate = (req, res, next) => {
-  const isAPIGateway =
-    req.headers["x-cognito-username"] ||
-    req.headers["x-apigateway-event"] ||
-    req.headers["x-amzn-requestid"];
-
-  if (isAPIGateway) {
-    return extractUser(req, res, next);
-  }
-  logger.warn("Running in local auth mode - no API Gateway verification");
-  return extractUserLocal(req, res, next);
-};
-
-// Log authenticated user info for debugging
-const logUser = (req, res, next) => {
-  if (req.user) {
-    logger.debug("Authenticated user", {
-      username: req.user.username,
-      role: req.user.role,
-      groups: req.user.groups,
-    });
-  }
-  next();
-};
-
-module.exports = {
-  authenticate,
-  extractUser,
-  extractUserLocal,
-  logUser,
-};
+module.exports = { authenticate };

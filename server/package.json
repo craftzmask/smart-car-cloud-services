@@ -15,11 +15,8 @@
     "db:logs:mongodb": "docker logs -f car_service_mongodb",
     "db:psql": "docker exec -it car_service_postgres psql -U postgres -d car_service_dev",
     "db:mongo": "docker exec -it car_service_mongodb mongosh -u admin -p admin123",
-    "db:backup:postgres": "docker exec car_service_postgres pg_dump -U postgres car_service_dev > backup_$(date +%Y%m%d_%H%M%S).sql",
-    "db:backup:mongodb": "docker exec car_service_mongodb mongodump --uri='mongodb://admin:admin123@localhost:27017/dev?authSource=admin' --out=/tmp/backup",
     "db:health": "npm run db:health:postgres && npm run db:health:mongodb",
-    "db:health:postgres": "docker exec car_service_postgres pg_isready -U postgres",
-    "db:health:mongodb": "docker exec car_service_mongodb mongosh --eval 'db.adminCommand(\"ping\")' -u admin -p admin123 --quiet",
+    "docker:push:snapshot": "docker push dattritat/car_service_postgres:dev-snapshot && docker push dattritat/car_service_mongodb:dev-snapshot",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix",
     "format": "prettier --write \"src/**/*.js\""
@@ -37,6 +34,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.913.0",
+    "aws-jwt-verify": "^4.0.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",

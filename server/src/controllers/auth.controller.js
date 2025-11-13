@@ -2,14 +2,13 @@
 
 const AuthService = require("../services/auth.service");
 const { OK, CREATED } = require("../core/success.response");
-const { BadRequestError } = require("../core/error.response");
+const { BadRequestError, AuthFailureError } = require("../core/error.response");
 
 class AuthController {
-  // Handle user signup
   /**
    * User signup
    * Public endpoint - no authentication required
-   * POST /api/v1/signup
+   * POST /api/v1/auth/signup
    */
   async signup(request, response) {
     const { username, password, email, role } = request.body;
@@ -32,11 +31,10 @@ class AuthController {
     }).send(response);
   }
 
-  // Handle user login
   /**
    * User login
    * Public endpoint - no authentication required
-   * POST /api/v1/login
+   * POST /api/v1/auth/login
    */
   async login(request, response) {
     const { username, password } = request.body;
@@ -54,17 +52,63 @@ class AuthController {
     }).send(response);
   }
 
-  // Provide user profile data
   /**
-   * Get user profile
+   * Confirm user signup
+   * Public endpoint - no authentication required
+   * POST /api/v1/auth/confirm
+   */
+  async confirm(request, response) {
+    const { username, code } = request.body || {};
+
+    if (!username || !code) {
+      throw new BadRequestError("Username and code are required");
+    }
+
+    const result = await AuthService.confirmSignUp({ username, code });
+
+    return new OK({
+      message: result.message || "Account confirmed successfully",
+      data: null,
+    }).send(response);
+  }
+
+  /**
+   * Resend confirmation code
+   * Public endpoint - no authentication required
+   * POST /api/v1/auth/resend
+   */
+  async resend(request, response) {
+    const { username } = request.body || {};
+
+    if (!username) {
+      throw new BadRequestError("Username is required");
+    }
+
+    const result = await AuthService.resendConfirmation({ username });
+
+    return new OK({
+      message: result.message || "Verification code resent successfully",
+      data: null,
+    }).send(response);
+  }
+
+  /**
+   * Get authenticated user profile
    * Protected endpoint - requires authentication
-   * API Gateway ensures user is authenticated
-   * GET /api/v1/profile/:username
+   * GET /api/v1/profile
    */
   async getProfile(request, response) {
-    const { username } = request.params;
+    const requester = request.user;
 
-    const result = await AuthService.getUserProfile(username);
+    if (!requester || !requester.username) {
+      throw new AuthFailureError("Authentication required");
+    }
+
+    const result = await AuthService.getUserProfile({
+      username: requester.username,
+      cognitoUsername: requester.cognitoUsername,
+      sub: requester.sub,
+    });
 
     return new OK({
       message: "Profile retrieved successfully",
@@ -72,7 +116,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Change user role
   /**
    * Update user role
    * Protected endpoint - requires authentication
@@ -95,7 +138,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Deactivate user account
   /**
    * Deactivate user account
    * Protected endpoint - requires admin authentication
@@ -112,7 +154,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Activate user account
   /**
    * Activate user account
    * Protected endpoint - requires admin authentication
@@ -129,7 +170,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Return active users
   /**
    * Get all active users
    * Protected endpoint - requires admin authentication
@@ -144,7 +184,6 @@ class AuthController {
     }).send(response);
   }
 
-  // Return users filtered by role
   /**
    * Get users by role
    * Protected endpoint - requires admin authentication

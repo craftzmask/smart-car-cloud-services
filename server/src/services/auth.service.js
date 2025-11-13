@@ -141,18 +141,127 @@ class AuthService {
     }
   }
 
-  // Retrieve user profile information
-  async getUserProfile(username) {
+  // Confirm signup using a verification code
+  async confirmSignUp({ username, code }) {
     try {
-      // Get user from Cognito
-      const cognitoUser = await CognitoService.getUserDetails(username);
-      
-      // Get user from local database
-      const localUser = await User.findByUsername(username);
+      if (!username || !code) {
+        throw new BadRequestError("Username and code are required");
+      }
+
+      const inputIsEmail = /.+@.+\..+/.test(username);
+      let primary = username;
+      let alternate = null;
+
+      if (!inputIsEmail) {
+        const local = await User.findByUsername(username);
+        if (local?.email) {
+          primary = local.email; // try email first (newer signups)
+          alternate = username; // fallback to raw username (older signups)
+        }
+      } else {
+        // If input is email, still try fallback to username from DB if exists
+        const localByEmail = await User.findByEmail(username);
+        if (localByEmail?.username) {
+          alternate = localByEmail.username;
+        }
+      }
+
+      let result;
+      try {
+        result = await CognitoService.confirmSignUp({ username: primary, code });
+      } catch (err) {
+        if (alternate) {
+          result = await CognitoService.confirmSignUp({ username: alternate, code });
+        } else {
+          throw err;
+        }
+      }
+
+      // Mark local user as verified if found
+      const localUser = inputIsEmail
+        ? await User.findByEmail(username)
+        : await User.findByUsername(username);
+      if (localUser) {
+        localUser.emailVerified = true;
+        await localUser.save();
+      }
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Resend confirmation code
+  async resendConfirmation({ username }) {
+    try {
+      if (!username) {
+        throw new BadRequestError("Username is required");
+      }
+
+      const inputIsEmail = /.+@.+\..+/.test(username);
+      let primary = username;
+      let alternate = null;
+
+      if (!inputIsEmail) {
+        const local = await User.findByUsername(username);
+        if (local?.email) {
+          primary = local.email; // try email first
+          alternate = username; // fallback to raw username
+        }
+      } else {
+        const localByEmail = await User.findByEmail(username);
+        if (localByEmail?.username) {
+          alternate = localByEmail.username;
+        }
+      }
+
+      let result;
+      try {
+        result = await CognitoService.resendConfirmationCode({ username: primary });
+      } catch (err) {
+        if (alternate) {
+          result = await CognitoService.resendConfirmationCode({ username: alternate });
+        } else {
+          throw err;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Retrieve user profile information
+  async getUserProfile(input) {
+    try {
+      const lookup =
+        typeof input === "string" ? { username: input } : input || {};
+      const username = (
+        lookup.username ||
+        lookup.cognitoUsername ||
+        ""
+      ).toLowerCase();
+
+      if (!username) {
+        throw new BadRequestError("Username is required");
+      }
+
+      const cognitoKey = lookup.cognitoUsername || username;
+      const cognitoPromise = CognitoService.getUserDetails(cognitoKey);
+
+      let localUser = await User.findByUsername(username);
+      console.log("localUser:", localUser);
+      if (!localUser && lookup.sub) {
+        localUser = await User.findByCognitoSub(lookup.sub);
+      }
 
       if (!localUser) {
         throw new NotFoundError("User not found in database");
       }
+
+      const cognitoUser = await cognitoPromise;
 
       return {
         username: cognitoUser.username,
@@ -161,13 +270,7 @@ class AuthService {
         groups: cognitoUser.groups,
         emailVerified: cognitoUser.emailVerified,
         userStatus: cognitoUser.userStatus,
-        localData: {
-          id: localUser.id,
-          createdAt: localUser.createdAt,
-          updatedAt: localUser.updatedAt,
-          lastLogin: localUser.lastLogin,
-          isActive: localUser.isActive,
-        },
+        localUser,
       };
     } catch (error) {
       throw error;
@@ -193,7 +296,7 @@ class AuthService {
 
       // Update in local database
       const localUser = await User.findByUsername(username);
-      
+
       if (!localUser) {
         throw new NotFoundError("User not found in database");
       }
@@ -220,11 +323,11 @@ class AuthService {
   async getAllUsers({ page = 1, limit = 10, role = null, isActive = null }) {
     try {
       const where = {};
-      
+
       if (role) {
         where.role = role;
       }
-      
+
       if (isActive !== null) {
         where.isActive = isActive;
       }
@@ -257,7 +360,7 @@ class AuthService {
   async deactivateUser(username) {
     try {
       const user = await User.findByUsername(username);
-      
+
       if (!user) {
         throw new NotFoundError("User not found");
       }
@@ -281,7 +384,7 @@ class AuthService {
   async activateUser(username) {
     try {
       const user = await User.findByUsername(username);
-      
+
       if (!user) {
         throw new NotFoundError("User not found");
       }
