@@ -1,1 +1,96 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'leaflet/dist/leaflet.css';
+
+:root {
+  font-family: 'Inter', sans-serif;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 8px;
+  z-index: 1; /* Ensure leaflet map has lower z-index than sidebar */
+}
+
+/* Control leaflet panes z-index */
+.leaflet-pane {
+  z-index: 2 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10 !important; /* Controls should be visible but below sidebar */
+}
+
+/* Ensure sidebar stays on top */
+.sidebar-container {
+  z-index: 50;
+}
+
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.car-marker {
+  position: relative;
+}
+
+.car-marker-icon {
+  background-color: hsl(var(--heroui-primary));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 0 0 4px rgba(var(--heroui-primary-rgb), 0.3);
+}
+
+.car-marker-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: hsl(var(--heroui-primary));
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.login-background {
+  background-image: 
+    radial-gradient(circle at 20% 35%, rgba(124, 58, 237, 0.15) 0%, transparent 30%),
+    radial-gradient(circle at 75% 65%, rgba(168, 85, 247, 0.1) 0%, transparent 30%);
+  background-size: cover;
+  background-position: center;
+}
+
+.purple-gradient {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+}
