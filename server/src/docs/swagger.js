@@ -374,6 +374,92 @@ const components = {
                 }
             }
         },
+        // --- Alert Schemas ---
+        Alert: {
+            type: "object",
+            properties: {
+                id: {type: "string", format: "uuid"},
+                carId: {type: "string", format: "uuid"},
+                alertType: {type: "string", example: "collision_sounds"},
+                severity: {type: "string", example: "critical"},
+                confidenceScore: {type: "string", example: "0.99"},
+                status: {
+                    type: "string",
+                    enum: ["new", "acknowledged", "resolved", "false_alert"],
+                    example: "new"
+                },
+                description: {type: "string", example: "collision sounds detected"},
+                acknowledgedBy: {type: "string" | null, format: "uuid"},
+                acknowledgedAt: {type: "string" | null, format: "date-time"},
+                createdAt: {type: "string", format: "date-time"},
+                updatedAt: {type: "string", format: "date-time"},
+                timestamp: {type: "string", format: "date-time"},
+                // location: {type: "string", example: "37.7749,-122.4194"},
+                car: {
+                    type: "object",
+                    properties: {
+                        id: {type: "string", format: "uuid"},
+                        vin: {type: "string", example: "1HGCM82633A004352"},
+                        make: {type: "string", example: "Toyota"},
+                        model: {type: "string", example: "Camry"},
+                    }
+                },
+                acknowledger: {
+                    type: "object",
+                    properties: {
+                        id: {type: "string", format: "uuid"},
+                        username: {type: "string", example: "john_doe"},
+                        email: {type: "string", example: "john_doe@gmail.com"},
+                    }
+                }
+            }
+        },
+        AlertStatusUpdateInput: {
+            type: "object",
+            required: ["status"],
+            properties: {
+                status: {
+                    type: "string",
+                    enum: ["acknowledged", "resolved", "false_alert"],
+                    description: "New status for the alert"
+                },
+                comment: {type: "string", example: "comment"},
+                userId: {type: "string", format: "uuid"},
+            }
+        },
+        AlertResponse: {
+            type: "object",
+            properties: {
+                message: {type: "string", example: "Alert retrieved successfully"},
+                status: {type: "integer", example: 200},
+                data: {$ref: "#/components/schemas/Alert"}
+            }
+        },
+        AlertListResponse: {
+            type: "object",
+            properties: {
+                message: {type: "string", example: "Alerts retrieved successfully"},
+                status: {type: "integer", example: 200},
+                data: {
+                    type: "object",
+                    properties: {
+                        alerts: {
+                            type: "array",
+                            items: {$ref: "#/components/schemas/Alert"}
+                        },
+                        pagination: {
+                            type: "object",
+                            properties: {
+                                total: {type: "integer"},
+                                page: {type: "integer"},
+                                limit: {type: "integer"},
+                                totalPages: {type: "integer"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
         ErrorResponse: {
             type: "object",
             properties: {
@@ -801,7 +887,104 @@ const paths = {
                 }
             }
         }
-    }
+    },
+    // --- Alert Endpoints ---
+    "/alerts": {
+        get: {
+            tags: ["Alerts"],
+            summary: "Get a list of alerts",
+            description: "Retrieve alerts with optional filtering by car, type, severity, or status.",
+            parameters: [
+                {
+                    name: "carId",
+                    in: "query",
+                    schema: {type: "string", format: "uuid"},
+                    description: "Filter by specific Car ID"
+                }, {
+                    name: "userId",
+                    in: "query",
+                    schema: {type: "string", format: "uuid"},
+                    description: "Filter by specific user ID"
+                },
+                {
+                    name: "alertType",
+                    in: "query",
+                    schema: {type: "string"},
+                    description: "Filter by Alert Type name (e.g. 'collision_sounds')"
+                },
+                {
+                    name: "severity",
+                    in: "query",
+                    schema: {type: "string", enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+                    description: "Filter by severity level"
+                },
+                {name: "status", in: "query", schema: {type: "string"}, description: "Filter by alert status"},
+                {name: "startDate", in: "query", schema: {type: "string", format: "Date"}},
+                {name: "endDate", in: "query", schema: {type: "string", format: "Date"}},
+                {name: "page", in: "query", schema: {type: "integer", default: 1}},
+                {name: "limit", in: "query", schema: {type: "integer", default: 10}},
+                {name: "sortBy", in: "query", schema: {type: "string", default: "createdAt"}},
+                {name: "sortOrder", in: "query", schema: {type: "string", enum: ["ASC", "DESC"], default: "DESC"}}
+            ],
+            responses: {
+                200: {
+                    description: "List of alerts",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/AlertListResponse"}}}
+                },
+                500: {
+                    description: "Internal server error",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/ErrorResponse"}}}
+                }
+            }
+        }
+    },
+    "/alerts/{alertId}": {
+        parameters: [
+            {name: "alertId", in: "path", required: true, schema: {type: "string", format: "uuid"}}
+        ],
+        get: {
+            tags: ["Alerts"],
+            summary: "Get a single alert by ID",
+            responses: {
+                200: {
+                    description: "Alert details",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/AlertResponse"}}}
+                },
+                404: {
+                    description: "Alert not found",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/ErrorResponse"}}}
+                }
+            }
+        }
+    },
+    "/alerts/{alertId}/status": {
+        parameters: [
+            {name: "alertId", in: "path", required: true, schema: {type: "string", format: "uuid"}}
+        ],
+        patch: {
+            tags: ["Alerts"],
+            summary: "Update alert status",
+            description: "Update the status of an alert (e.g., mark as RESOLVED).",
+            requestBody: {
+                required: true,
+                content: {"application/json": {schema: {$ref: "#/components/schemas/AlertStatusUpdateInput"}}}
+            },
+            responses: {
+                200: {
+                    description: "Alert status updated",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/AlertResponse"}}}
+                },
+                400: {
+                    description: "Invalid status or parameters",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/ErrorResponse"}}}
+                },
+                404: {
+                    description: "Alert not found",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/ErrorResponse"}}}
+                }
+            }
+        }
+    },
 };
 
 module.exports = {
