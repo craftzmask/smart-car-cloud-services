@@ -1,7 +1,6 @@
 "use strict";
 
 const {DataTypes, Model} = require("sequelize");
-const {ALERT_TYPES} = require("../../types/enums");
 
 class AlertThreshold extends Model {
     /**

@@ -1,7 +1,6 @@
 "use strict";
 
 const {DataTypes, Model} = require("sequelize");
-const {ALERT_TYPES} = require("../../types/enums");
 const instanceDatabase = require("../../dbs/init.database");
 
 class ServiceConfiguration extends Model {

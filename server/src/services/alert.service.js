@@ -9,7 +9,6 @@ const AlertTypeService = require("./alertType.service");
 const Car = require("../models/sql/car.model");
 const User = require("../models/sql/user.model");
 const AlertNotification = require("../models/mongo/alertNotification.model");
-const {AudioEvent} = require("../models/mongo");
 const NotificationService = require("./notification.service");
 const {
     ALERT_STATUS,

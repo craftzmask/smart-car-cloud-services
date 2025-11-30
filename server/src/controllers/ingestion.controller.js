@@ -3,7 +3,6 @@
 const IngestionService = require("../services/ingestion.service");
 const {OK} = require("../core/success.response");
 const {BadRequestError} = require("../core/error.response");
-const MLService = require("../services/ml.service");
 
 class IngestionController {
 

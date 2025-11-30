@@ -3,7 +3,6 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const os = require("os");
 const IngestionController = require("../../controllers/ingestion.controller");
 const asyncErrorHandler = require("../../helpers/asyncErrorHandler");
 
