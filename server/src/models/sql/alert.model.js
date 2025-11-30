@@ -2,7 +2,7 @@
 
 const {DataTypes, Model} = require("sequelize");
 const instanceDatabase = require("../../dbs/init.database");
-const {ALERT_SEVERITY, ALERT_STATUS, ALERT_TYPES} = require("../../types/enums");
+const {ALERT_SEVERITY, ALERT_STATUS} = require("../../types/enums");
 
 
 class Alert extends Model {
