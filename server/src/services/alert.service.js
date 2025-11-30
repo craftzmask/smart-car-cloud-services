@@ -5,6 +5,7 @@ const Alert = require("../models/sql/alert.model");
 const AlertHistory = require("../models/mongo/alertHistory.model");
 const AlertThreshold = require("../models/sql/alertThreshold.model");
 const AlertType = require("../models/sql/alertType.model");
+const AlertTypeService = require("./alertType.service");
 const Car = require("../models/sql/car.model");
 const User = require("../models/sql/user.model");
 const AlertNotification = require("../models/mongo/alertNotification.model");
@@ -37,16 +38,12 @@ class AlertService {
     determineSeverity(alertType, confidence) {
         // Map alert types to base severity
         const severityMap = {
-            collision_detected: ALERT_SEVERITY.CRITICAL,
-            unauthorized_access: ALERT_SEVERITY.CRITICAL,
-            airbag_malfunction: ALERT_SEVERITY.CRITICAL,
-            engine_warning: ALERT_SEVERITY.HIGH,
-            abs_failure: ALERT_SEVERITY.HIGH,
-            battery_low: ALERT_SEVERITY.HIGH,
-            tire_pressure_low: ALERT_SEVERITY.MEDIUM,
-            maintenance_due: ALERT_SEVERITY.MEDIUM,
-            fuel_low: ALERT_SEVERITY.LOW,
-            speed_limit_exceeded: ALERT_SEVERITY.LOW,
+            alert_sounds: ALERT_SEVERITY.HIGH,
+            collision_sounds: ALERT_SEVERITY.CRITICAL,
+            emergency_sirens: ALERT_SEVERITY.HIGH,
+            environmental_sounds: ALERT_SEVERITY.MEDIUM,
+            human_scream: ALERT_SEVERITY.HIGH,
+            road_traffic: ALERT_SEVERITY.LOW,
         };
 
         let severity = severityMap[alertType] || ALERT_SEVERITY.MEDIUM;
@@ -175,7 +172,7 @@ class AlertService {
     }
 
 
-    async createAlert({carId, classifiedResults, metadata = {}, audioEventId = null}) {
+    async createAlert({carId, classifiedResult, metadata = {}, audioEventId = null}) {
         try {
             // 1. Validate car exists
             const car = await Car.findByPk(carId);
@@ -183,28 +180,26 @@ class AlertService {
                 throw new NotFoundError("Car not found");
             }
 
-            // 2. Find the best alert from classification results using database thresholds
-            const bestAlert = await AlertThreshold.findBestAlert(classifiedResults);
-
-            if (!bestAlert) {
-                logger.debug(
-                    `No valid alerts found for car ${carId}. Classification results:`,
-                    classifiedResults
-                );
-                return null;
+            const {predictedClass: type, confidence} = classifiedResult;
+            const alertType = await AlertTypeService.getByType(type);
+            if (!alertType) {
+                throw new NotFoundError("Alert type not found");
             }
 
-            const {type: alertType, confidence, threshold} = bestAlert;
-
+            const threshold = await AlertThreshold.findByAlertType(alertType.type.toLowerCase().trim());
+            if (confidence < threshold) {
+                logger.info(`Confidence score (${confidence}) is less than ${threshold}.`);
+                return null;
+            }
             // Determine severity based on alert type or default mapping
-            const severity = this.determineSeverity(alertType, confidence);
+            const severity = this.determineSeverity(alertType.type, confidence);
 
             // 4. Check for duplicate recent alerts (within 5 minutes)
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
             const recentAlert = await Alert.findOne({
                 where: {
                     carId,
-                    alertType,
+                    alertType: alertType.type,
                     createdAt: {
                         [Op.gte]: fiveMinutesAgo,
                     },
@@ -213,7 +208,7 @@ class AlertService {
 
             if (recentAlert) {
                 logger.warn(
-                    `Duplicate alert detected for car ${carId}, type ${alertType}`
+                    `Duplicate alert detected for car ${carId}, type ${alertType.type}`
                 );
 
                 // Update existing alert's confidence if new one is higher
@@ -221,30 +216,31 @@ class AlertService {
                     recentAlert.confidentScore = confidence;
                     await recentAlert.save();
                 }
-
                 return null;
             }
 
             // 5. Create alert
             const alert = await Alert.create({
                 carId,
-                alertType,
+                alertType: alertType.type,
                 severity,
                 confidentScore: confidence,
-                description: `${alertType} detected`,
+                description: `${alertType.description} detected`,
                 status: ALERT_STATUS.NEW,
             });
 
             // 6. Log creation in history
-            await this.logAlertAction(alert.id, null, alertType, ALERT_ACTIONS.CREATED, {
+            await this.logAlertAction(alert.id, null, alertType.type, ALERT_ACTIONS.CREATED, {
                 newStatus: ALERT_STATUS.NEW,
                 metadata,
                 audioEventId,
                 mlClassification: {
+                    model: classifiedResult.raw.model,
+                    endpoint: classifiedResult.endpoint,
+                    region: classifiedResult.region,
                     confidence,
-                    allResults: classifiedResults,
                     selectedAlert: {
-                        type: alertType,
+                        type: alertType.type,
                         confidence,
                         threshold,
                     },
@@ -252,7 +248,7 @@ class AlertService {
             });
 
             logger.info(
-                `Alert created: ${alert.id} for car ${carId}, type: ${alertType}, confidence: ${confidence.toFixed(2)}, threshold: ${threshold}`
+                `Alert created: ${alert.id} for car ${carId}, type: ${alertType.type}, confidence: ${confidence.toFixed(2)}, threshold: ${threshold}`
             );
 
             // 7. Send alert data to notification service
@@ -627,7 +623,8 @@ class AlertService {
                 previousStatus: data.previousStatus || null,
                 newStatus: data.newStatus || null,
                 comment: data.comment || data.reason || null,
-                metadata: data,
+                metadata: data.metadata,
+                mlClassification: data.mlClassification,
                 timestamp: new Date(),
             });
         } catch (error) {

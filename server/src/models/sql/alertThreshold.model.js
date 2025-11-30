@@ -38,9 +38,6 @@ AlertThreshold.init(
             onUpdate: "CASCADE",
             onDelete: "RESTRICT",
             comment: "Type of alert (unique)",
-            validate: {
-                isIn: [Object.values(ALERT_TYPES)],
-            },
         },
         minThreshold: {
             type: DataTypes.DECIMAL(5, 4),

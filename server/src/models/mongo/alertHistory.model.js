@@ -57,6 +57,11 @@ const AlertHistorySchema = new mongoose.Schema(
             default: {},
             comment: "Additional contextual data",
         },
+        mlClassification: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
+            comment: "Data information for ml classification",
+        },
         timestamp: {
             type: Date,
             required: true,
@@ -98,6 +103,7 @@ AlertHistorySchema.methods.toSimpleJSON = function () {
         comment: this.comment,
         timestamp: this.timestamp,
         metadata: this.metadata,
+        mlClassification: this.mlClassification,
     };
 };
 

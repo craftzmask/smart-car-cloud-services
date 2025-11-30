@@ -72,9 +72,6 @@ Alert.init(
             },
             onUpdate: "CASCADE",
             onDelete: "RESTRICT",
-            validate: {
-                isIn: [Object.values(ALERT_TYPES)],
-            },
         },
         severity: {
             type: DataTypes.ENUM(

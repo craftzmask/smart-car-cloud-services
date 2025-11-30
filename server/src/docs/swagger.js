@@ -339,6 +339,41 @@ const components = {
                 },
             },
         },
+        // --- Ingestion Schemas ---
+        IngestionResponse: {
+            type: "object",
+            properties: {
+                message: {type: "string", example: "Audio ingested and processed successfully"},
+                status: {type: "integer", example: 200},
+                data: {
+                    type: "object",
+                    properties: {
+                        eventId: {type: "string", example: "692bd615906bfca621d82ba7"},
+                        storagePath: {type: "string", example: "/uploads/1764480533230_audio.wav"},
+                        classification: {
+                            type: "object",
+                            description: "ML model classification results",
+                            properties: {
+                                predictedClass: {type: "string", example: "collision_sounds"},
+                                confidence: {type: "number", example: 0.9945},
+                                probabilities: {type: "object"}
+                            }
+                        },
+                        metadata: {
+                            type: "object",
+                            properties: {
+                                carId: {type: "string", format: "uuid"},
+                                deviceId: {type: "string"},
+                                timestamp: {type: "string", format: "date-time"},
+                                location: {type: "string"},
+                                speed: {type: "number"},
+                                rate: {type: "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        },
         ErrorResponse: {
             type: "object",
             properties: {
@@ -726,6 +761,47 @@ const paths = {
             },
         },
     },
+    // --- Ingestion Endpoints ---
+    "/ingestion/audio": {
+        post: {
+            tags: ["Ingestion"],
+            summary: "Ingest and process audio file",
+            description: "Uploads an audio file along with metadata for processing and ML classification. The metadata JSON string must include carId, deviceId, timestamp, etc.",
+            requestBody: {
+                required: true,
+                content: {
+                    "multipart/form-data": {
+                        schema: {
+                            type: "object",
+                            properties: {
+                                file: {
+                                    type: "string",
+                                    format: "binary",
+                                    description: "Audio file (wav, mp3, etc.)"
+                                },
+                                data: {
+                                    type: "string",
+                                    description: "Stringified JSON object containing metadata (carId, deviceId, timestamp, location, etc.)",
+                                    example: "{\"carId\": \"uuid...\", \"deviceId\": \"cam-01\", \"timestamp\": \"2023-10-27T10:00:00Z\", \"location\": \"37.77,-122.41\"}"
+                                }
+                            },
+                            required: ["file", "data"]
+                        }
+                    }
+                }
+            },
+            responses: {
+                200: {
+                    description: "Audio processed successfully",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/IngestionResponse"}}}
+                },
+                400: {
+                    description: "Missing file or invalid metadata format",
+                    content: {"application/json": {schema: {$ref: "#/components/schemas/ErrorResponse"}}}
+                }
+            }
+        }
+    }
 };
 
 module.exports = {

@@ -39,21 +39,6 @@ ServiceConfiguration.init(
             defaultValue: [],
             field: "alert_types",
             comment: "Array of alert_type values",
-            validate: {
-                areValidAlertTypes(value) {
-                    if (value == null) return;
-                    if (!Array.isArray(value)) {
-                        throw new Error("alertTypes must be an array");
-                    }
-                    const allowed = new Set(Object.values(ALERT_TYPES));
-                    for (const t of value) {
-                        if (t == null) continue;
-                        if (!allowed.has(String(t))) {
-                            throw new Error(`Invalid alert type: ${t}`);
-                        }
-                    }
-                },
-            },
         },
         createdAt: {
             type: DataTypes.DATE,
