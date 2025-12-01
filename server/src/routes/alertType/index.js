@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.get("", asyncErrorHandler(AlertTypeController.list));
 
-router.post("/:type", asyncErrorHandler(AlertTypeController.getByType));
+router.get("/:type", asyncErrorHandler(AlertTypeController.getByType));
 
 router.post(
     "",

@@ -2,7 +2,7 @@
 
 const {DataTypes, Model} = require("sequelize");
 const instanceDatabase = require("../../dbs/init.database");
-const {ALERT_SEVERITY, ALERT_STATUS, ALERT_TYPES} = require("../../types/enums");
+const {ALERT_SEVERITY, ALERT_STATUS} = require("../../types/enums");
 
 
 class Alert extends Model {
@@ -72,9 +72,6 @@ Alert.init(
             },
             onUpdate: "CASCADE",
             onDelete: "RESTRICT",
-            validate: {
-                isIn: [Object.values(ALERT_TYPES)],
-            },
         },
         severity: {
             type: DataTypes.ENUM(
@@ -100,17 +97,22 @@ Alert.init(
             type: DataTypes.STRING(50),
             allowNull: false,
             defaultValue: ALERT_STATUS.NEW,
-            references: {
-                model: "alert_status_enum",
-                key: "status",
-            },
-            onUpdate: "CASCADE",
-            onDelete: "RESTRICT",
+            // references: {
+            //     model: "alert_status_enum",
+            //     key: "status",
+            // },
+            // onUpdate: "CASCADE",
+            // onDelete: "RESTRICT",
         },
         description: {
             type: DataTypes.TEXT,
             allowNull: true,
             comment: "Detailed alert description",
+        },
+        location: {
+            type: DataTypes.STRING(30),
+            allowNull: true,
+            comment: "Location for alert",
         },
         acknowledgedBy: {
             type: DataTypes.UUID,

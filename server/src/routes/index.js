@@ -11,5 +11,6 @@ router.use("/cars", require("./car"));
 router.use("/service-configurations", require("./serviceConfig"));
 router.use("/subscriptions", require("./subscription"));
 router.use("/ml", require("./ml"));
+router.use("/ingestion", require("./ingestion"));
 
 module.exports = router;

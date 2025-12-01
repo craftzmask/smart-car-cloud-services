@@ -29,14 +29,14 @@ module.exports = {
     /**
      * Create new alert type
      */
-    async create({type}) {
+    async create({type, description}) {
         if (!type || typeof type !== "string" || !type.trim()) {
             throw new BadRequestError("Alert Type required");
         }
         const normalized = type.toLowerCase().trim();
 
         try {
-            const created = await AlertType.create({type: normalized});
+            const created = await AlertType.create({type: normalized, description});
             return toPlain(created);
         } catch (err) {
             logger.error(err.message);

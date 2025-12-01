@@ -1,7 +1,6 @@
 "use strict";
 
 const {DataTypes, Model} = require("sequelize");
-const {ALERT_TYPES} = require("../../types/enums");
 
 class AlertThreshold extends Model {
     /**
@@ -38,9 +37,6 @@ AlertThreshold.init(
             onUpdate: "CASCADE",
             onDelete: "RESTRICT",
             comment: "Type of alert (unique)",
-            validate: {
-                isIn: [Object.values(ALERT_TYPES)],
-            },
         },
         minThreshold: {
             type: DataTypes.DECIMAL(5, 4),
