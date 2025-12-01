@@ -394,7 +394,7 @@ const components = {
                 createdAt: {type: "string", format: "date-time"},
                 updatedAt: {type: "string", format: "date-time"},
                 timestamp: {type: "string", format: "date-time"},
-                // location: {type: "string", example: "37.7749,-122.4194"},
+                location: {type: "string", example: "37.7749,-122.4194"},
                 car: {
                     type: "object",
                     properties: {
@@ -915,16 +915,21 @@ const paths = {
                 {
                     name: "severity",
                     in: "query",
-                    schema: {type: "string", enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+                    schema: {type: "string", enum: ["low", "medium", "high", "critical"]},
                     description: "Filter by severity level"
                 },
-                {name: "status", in: "query", schema: {type: "string"}, description: "Filter by alert status"},
+                {
+                    name: "status",
+                    in: "query",
+                    schema: {type: "string", enum: ["new", "acknowledged", "resolved", "false_alert"]},
+                    description: "Filter by alert status"
+                },
                 {name: "startDate", in: "query", schema: {type: "string", format: "Date"}},
                 {name: "endDate", in: "query", schema: {type: "string", format: "Date"}},
-                {name: "page", in: "query", schema: {type: "integer", default: 1}},
-                {name: "limit", in: "query", schema: {type: "integer", default: 10}},
-                {name: "sortBy", in: "query", schema: {type: "string", default: "createdAt"}},
-                {name: "sortOrder", in: "query", schema: {type: "string", enum: ["ASC", "DESC"], default: "DESC"}}
+                {name: "page", in: "query", schema: {type: "integer"}},
+                {name: "limit", in: "query", schema: {type: "integer"}},
+                {name: "sortBy", in: "query", schema: {type: "string"}},
+                {name: "sortOrder", in: "query", schema: {type: "string", enum: ["ASC", "DESC"]}}
             ],
             responses: {
                 200: {

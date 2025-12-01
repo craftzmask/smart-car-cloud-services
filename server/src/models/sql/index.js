@@ -115,6 +115,8 @@ Alert.belongsTo(AlertStatusEnum, {
     foreignKey: "status",
     as: "statusInfo",
     targetKey: "status",
+    onUpdate: 'CASCADE',
+    onDelete: 'RESTRICT',
 });
 
 // Alert -> User (acknowledged_by)

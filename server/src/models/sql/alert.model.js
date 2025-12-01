@@ -97,17 +97,22 @@ Alert.init(
             type: DataTypes.STRING(50),
             allowNull: false,
             defaultValue: ALERT_STATUS.NEW,
-            references: {
-                model: "alert_status_enum",
-                key: "status",
-            },
-            onUpdate: "CASCADE",
-            onDelete: "RESTRICT",
+            // references: {
+            //     model: "alert_status_enum",
+            //     key: "status",
+            // },
+            // onUpdate: "CASCADE",
+            // onDelete: "RESTRICT",
         },
         description: {
             type: DataTypes.TEXT,
             allowNull: true,
             comment: "Detailed alert description",
+        },
+        location: {
+            type: DataTypes.STRING(30),
+            allowNull: true,
+            comment: "Location for alert",
         },
         acknowledgedBy: {
             type: DataTypes.UUID,

@@ -225,6 +225,7 @@ class AlertService {
                 severity,
                 confidentScore: confidence,
                 description: `${alertType.description} detected`,
+                location: metadata.location,
                 status: ALERT_STATUS.NEW,
             });
 
