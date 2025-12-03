@@ -21,7 +21,7 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,39 +38,77 @@ interface UploadItem {
   isAlreadyClicked: boolean;
   isRight: boolean;
   predictions: number;
-  result: Record<string, number>;
+  prediction: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+}
+
+function getSimulatedPrediction(): {
+  prediction: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+} {
+  const keys = [
+    "alert_sounds",
+    "emergency_sirens",
+    "environmental_sounds",
+    "road_traffic",
+    "collision_sounds",
+    "human_scream",
+  ];
+
+  // CONFIGURATION
+  // 20 = Very confident model (winner gets ~90%)
+  // 5  = Less confident model (winner gets ~50-60%)
+  const biasStrength = 20;
+
+  // 1. Pick a random "winner" index
+  const dominantIndex = Math.floor(Math.random() * keys.length);
+
+  // 2. Generate weights (Winner gets Random + Bias, others get just Random)
+  const weights = keys.map((_, index) =>
+    index === dominantIndex ? Math.random() + biasStrength : Math.random()
+  );
+
+  // 3. Calculate Total Weight
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+  // 4. Normalize to 100% and find the highest
+  const probabilities: Record<string, number> = {};
+  let highestType = "";
+  let highestValue = -1;
+
+  keys.forEach((key, index) => {
+    const probability = (weights[index] / totalWeight) * 100;
+    probabilities[key] = probability;
+
+    if (probability > highestValue) {
+      highestValue = probability;
+      highestType = key;
+    }
+  });
+
+  return {
+    probabilities,
+    prediction: highestType,
+    confidence: highestValue,
+  };
 }
 
 export function CloudModelDetailPage() {
   const { modelId } = useParams<{ modelId: string }>();
-  const [files, setFiles] = useState<File[]>([]);
   const [items, setItems] = useState<UploadItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<UploadItem | null>(null);
+  const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const ownerId = "u-owner-1";
 
   const { data, isLoading, error } = useOwnerDashboard(ownerId);
 
-  useEffect(() => {
-    if (files.length > 0) {
-      setItems(
-        files.map((file) => ({
-          filename: file.name,
-          isAlreadyClicked: false,
-          predictions: Math.random() * 100,
-          isRight: false,
-          result: {
-            alert_sounds: Math.random() * 100,
-            emergency_sirens: Math.random() * 100,
-            environmental_sounds: Math.random() * 100,
-            road_traffic: Math.random() * 100,
-            collision_sounds: Math.random() * 100,
-            human_scream: Math.random() * 100,
-          },
-        }))
-      );
-    }
-  }, [files]);
+  const selectedItem =
+    selectedFilename != null
+      ? items.find((i) => i.filename === selectedFilename) ?? null
+      : null;
 
   if (isLoading) return <Loading />;
 
@@ -95,31 +133,40 @@ export function CloudModelDetailPage() {
   }
 
   function handleUpload(files: File[]) {
-    setFiles(files);
+    // Generate a STABLE prediction for each new file when it is uploaded
+    const newItems: UploadItem[] = files.map((file) => {
+      const { prediction, confidence, probabilities } =
+        getSimulatedPrediction();
+
+      return {
+        filename: file.name,
+        isAlreadyClicked: false,
+        isRight: false,
+        predictions: confidence, // reuse confidence for "Predicted: xx%"
+        prediction,
+        confidence,
+        probabilities,
+      };
+    });
+
+    setItems((prev) => [...newItems]);
+
+    // Optionally auto-select the first newly uploaded file
+    if (files.length > 0) {
+      setSelectedFilename(files[0].name);
+    }
   }
 
-  // const items: UploadItem[] = files.map((file) => ({
-  //   filename: file.name,
-  //   isAlreadyClicked: false,
-  //   predictions: Math.random() * 100,
-  //   result: {
-  //     alert_sounds: Math.random() * 100,
-  //     emergency_sirens: Math.random() * 100,
-  //     environmental_sounds: Math.random() * 100,
-  //     road_traffic: Math.random() * 100,
-  //     collision_sounds: Math.random() * 100,
-  //     human_scream: Math.random() * 100,
-  //   },
-  // }));
-
   function handleItemClicked(item: UploadItem) {
-    setSelectedItem(item);
+    setSelectedFilename(item.filename);
   }
 
   function handleRightWrongClicked(updated: UploadItem) {
-    setItems(
-      items.map((item) => (item.filename === updated.filename ? updated : item))
+    setItems((prev) =>
+      prev.map((item) => (item.filename === updated.filename ? updated : item))
     );
+
+    // keep selected pointing to same filename (no need to update selectedFilename)
   }
 
   return (
@@ -217,7 +264,7 @@ function HistoryUploadedFiles({
                   )
                 ) : null}
 
-                {selectedItem?.filename == item.filename &&
+                {selectedItem?.filename === item.filename &&
                   !item.isAlreadyClicked && (
                     <>
                       <Button
@@ -278,97 +325,41 @@ function Result({ item }: ResultProps) {
     );
   }
 
-  function getSimulatedPrediction() {
-    const keys = [
-      "alert_sounds",
-      "emergency_sirens",
-      "environmental_sounds",
-      "road_traffic",
-      "collision_sounds",
-      "human_scream",
-    ];
-
-    // CONFIGURATION
-    // 20 = Very confident model (winner gets ~90%)
-    // 5  = Less confident model (winner gets ~50-60%)
-    const biasStrength = 20;
-
-    // 1. Pick a random "winner" index
-    const dominantIndex = Math.floor(Math.random() * keys.length);
-
-    // 2. Generate weights (Winner gets Random + Bias, others get just Random)
-    const weights = keys.map((_, index) => {
-      return index === dominantIndex
-        ? Math.random() + biasStrength
-        : Math.random();
-    });
-
-    // 3. Calculate Total Weight
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-
-    // 4. Normalize to 100% and find the highest
-    const result = {};
-    let highestType = "";
-    let highestValue = -1;
-
-    keys.forEach((key, index) => {
-      const probability = (weights[index] / totalWeight) * 100;
-      result[key] = probability;
-
-      // Track the max
-      if (probability > highestValue) {
-        highestValue = probability;
-        highestType = key;
-      }
-    });
-
-    return {
-      probabilities: result,
-      prediction: highestType, // e.g., "emergency_sirens"
-      confidence: highestValue, // e.g., 92.45...
-    };
-  }
-
-  const result = getSimulatedPrediction();
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{item?.filename}</CardTitle>
+        <CardTitle>{item.filename}</CardTitle>
         <CardDescription>Audio Classification Result</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Item variant="outline" className="border border-green-500 bg-green-50">
           <ItemContent className="flex flex-col justify-center items-center">
             <ItemTitle className="text-2xl">
-              {capitalize(result.prediction)}
+              {capitalize(item.prediction)}
             </ItemTitle>
             <ItemDescription className="text-lg text-green-500">
-              {result.confidence.toFixed(1)}% Confidence
+              {item.confidence.toFixed(1)}% Confidence
             </ItemDescription>
           </ItemContent>
         </Item>
         <div className="flex flex-col gap-2">
-          {!item ? (
-            <div>Hello</div>
-          ) : (
-            Object.keys(result.probabilities).map((key) => (
-              <Item variant="outline" key={key}>
-                <ItemContent>
-                  <ItemTitle className="w-full flex items-center">
-                    <span className="flex-2">{capitalize(key)}</span>
-                    <Progress
-                      value={result.probabilities[key].toFixed(1)}
-                      className="flex-4"
-                    />
-                    <span className="flex-1 text-right">
-                      {result.probabilities[key].toFixed(1)}%
-                    </span>
-                  </ItemTitle>
-                </ItemContent>
-              </Item>
-            ))
-          )}
+          {Object.keys(item.probabilities).map((key) => (
+            <Item variant="outline" key={key}>
+              <ItemContent>
+                <ItemTitle className="w-full flex items-center">
+                  <span className="flex-2">{capitalize(key)}</span>
+                  <Progress
+                    // Progress expects a number, not string
+                    value={item.probabilities[key]}
+                    className="flex-4"
+                  />
+                  <span className="flex-1 text-right">
+                    {item.probabilities[key].toFixed(1)}%
+                  </span>
+                </ItemTitle>
+              </ItemContent>
+            </Item>
+          ))}
         </div>
       </CardContent>
     </Card>

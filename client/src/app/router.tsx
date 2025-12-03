@@ -12,6 +12,7 @@ import { CloudAlertsPage } from "@/features/cloud/pages/CloudAlertsPage";
 import { CloudModelsPage } from "@/features/cloud/pages/CloudModelsPage";
 import { CloudAlertTypesPage } from "@/features/cloud/pages/CloudAlertTypesPage";
 import { CloudModelDetailPage } from "@/features/cloud/pages/CloudModelDetailPage";
+import { CloudDatabasePage } from "@/features/cloud/pages/CloudDatabasePage";
 
 export const router = createBrowserRouter([
   {
@@ -99,6 +100,14 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <CloudModelDetailPage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/cloud/database",
+    element: (
+      <RequireAuth>
+        <CloudDatabasePage />
       </RequireAuth>
     ),
   },

@@ -98,7 +98,7 @@ export function FileUpload({
       let progress = 0;
 
       const interval = setInterval(() => {
-        progress += 10 + Math.random() * 15;
+        progress += 10 + Math.random() * 12;
 
         if (progress >= 100) {
           progress = 100;
@@ -120,7 +120,7 @@ export function FileUpload({
           clearInterval(interval);
           resolve();
         }
-      }, 200);
+      }, 400);
     });
   }
 
