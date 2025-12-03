@@ -28,7 +28,7 @@ import { AddModelDialog } from "../components/AddModelDialog";
 import { EditModelDialog } from "../components/EditModelDialog";
 import { DeleteModelDialog } from "../components/DeleteModelDialog";
 import { toast } from "sonner";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import {
   Activity,
   BarChart3,
@@ -43,7 +43,6 @@ export function CloudModelsPage() {
   const ownerId = "u-owner-1";
   const { data, isLoading, error } = useOwnerDashboard(ownerId);
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -151,14 +150,14 @@ export function CloudModelsPage() {
       value: models.filter((model) => model.status === "RUNNING").length,
       icon: Cpu,
       color: "text-blue-600",
-      trend: "+12%",
+      trend: "+1",
     },
     {
       label: "Training Jobs",
       value: models.filter((model) => model.status === "TRAINING").length,
       icon: Activity,
       color: "text-orange-600",
-      trend: "+1",
+      trend: "0",
     },
     {
       label: "Avg Accuracy",
@@ -176,10 +175,10 @@ export function CloudModelsPage() {
     },
     {
       label: "Total Predictions",
-      value: "1.2M",
+      value: "253",
       icon: CheckCircle,
       color: "text-purple-600",
-      trend: "+45K",
+      trend: "+45",
     },
   ];
 

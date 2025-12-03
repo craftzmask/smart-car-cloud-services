@@ -95,17 +95,6 @@ export function CloudLayout({ children }: CloudLayoutProps) {
 
       <main className="flex-1">
         <Toaster />
-        {/* Header */}
-        <div className="py-2 border-b">
-          <div className="flex flex-col h-16 px-6">
-            <h1 className="text-2xl font-bold tracking-tight">
-              {currentItem.label}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {currentItem.description}
-            </p>
-          </div>
-        </div>
         {children}
       </main>
     </div>

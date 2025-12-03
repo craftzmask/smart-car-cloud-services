@@ -3,7 +3,14 @@ import Loading from "@/components/shared/Loading";
 import type { Alert, IoTDevice } from "@/domain/types";
 import { useOwnerDashboard } from "@/features/owner/hooks/useOwnerDashboard";
 import { CloudLayout } from "../components/CloudLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,8 +19,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { AlertSeverityBadge } from "@/components/status/AlertSeverityBadge";
-import { capitalize } from "@/utils";
+import {
+  capitalize,
+  filterAlertsByDays,
+  getLastNDaysRangeLabel,
+} from "@/utils";
+import {
+  Activity,
+  BellRing,
+  Car as CarIcon,
+  TrendingUp,
+  Wifi,
+} from "lucide-react";
+import { AlertLineChart, AlertTypeBarChart } from "@/components/shared/Chart";
 
 export function CloudOverviewPage() {
   const ownerId = "u-owner-1";
@@ -25,86 +45,137 @@ export function CloudOverviewPage() {
 
   const { cars, devices, alerts } = data;
 
-  const totalCars = cars.length;
-  const totalDevices = devices.length;
-  const totalAlerts = alerts.length;
-
-  const criticalAlerts = alerts.filter(
-    (a: Alert) => a.severity === "CRITICAL"
-  ).length;
-
-  const warningAlerts = alerts.filter(
-    (a: Alert) => a.severity === "WARN"
-  ).length;
-
-  const infoAlerts = alerts.filter((a: Alert) => a.severity === "INFO").length;
-
   const onlineDevices = devices.filter(
     (d: IoTDevice) => d.status === "ONLINE"
-  ).length;
-  const offlineDevices = devices.filter(
-    (d: IoTDevice) => d.status === "OFFLINE"
   ).length;
 
   const recentCriticalAlerts = alerts
     .filter((a: Alert) => a.severity === "CRITICAL")
     .slice(0, 5);
 
+  const metrics = [
+    {
+      label: "Total Cars",
+      value: cars.length,
+      icon: CarIcon,
+      color: "text-purple-600",
+      trend: "+1",
+    },
+    {
+      label: "Active Alerts",
+      value: alerts.length,
+      icon: BellRing,
+      color: "text-blue-600",
+      trend: "+1",
+    },
+    {
+      label: "IoT Devices",
+      value: devices.length,
+      icon: Activity,
+      color: "text-orange-600",
+      trend: "+2",
+    },
+    {
+      label: "Device Status",
+      value: `${onlineDevices}/${devices.length}`,
+      icon: Wifi,
+      color: "text-green-600",
+      trend: "+1",
+    },
+  ];
+
   return (
     <CloudLayout>
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-4">
+          {metrics.map((metric, idx) => (
+            <Card key={idx}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{metric.label}</CardTitle>
+                <metric.icon className={`${metric.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{metric.value}</div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <TrendingUp className="h-3 w-3" />
+                  {metric.trend} from last month
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Separator />
+
+        <div className="grid grid-cols-2 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cars</CardTitle>
+              <CardTitle>Alert Type Distribution (Last 7 Days)</CardTitle>
+              <CardDescription>{getLastNDaysRangeLabel(7)}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-semibold">{totalCars}</p>
-              <p className="text-slate-500">Connected smart cars</p>
+              <AlertTypeBarChart alerts={filterAlertsByDays(alerts, 7)} />
             </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="text-muted-foreground leading-none">
+                Showing total alerts for the last 7 days
+              </div>
+            </CardFooter>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>IoT devices</CardTitle>
+              <CardTitle>Alert Type Distribution (Last 30 Days)</CardTitle>
+              <CardDescription>{getLastNDaysRangeLabel(30)}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-semibold">{totalDevices}</p>
-              <p className="text-slate-500">Audio / camera / edge nodes</p>
+              <AlertTypeBarChart alerts={filterAlertsByDays(alerts, 30)} />
             </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="text-muted-foreground leading-none">
+                Showing total alerts for the last 30 days
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Alert Volume Over Time (Last 7 Days)</CardTitle>
+              <CardDescription>{getLastNDaysRangeLabel(7)}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertLineChart alerts={filterAlertsByDays(alerts, 7)} />
+            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="text-muted-foreground leading-none">
+                Showing total alerts for the last 7 days
+              </div>
+            </CardFooter>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Alerts (24h)</CardTitle>
+              <CardTitle>Alert Volume Over Time (Last 30 Days)</CardTitle>
+              <CardDescription>{getLastNDaysRangeLabel(30)}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-semibold">{totalAlerts}</p>
-              <p className="text-slate-500">
-                Info {infoAlerts} · Warn {warningAlerts} · Crit {criticalAlerts}
-              </p>
+              <AlertLineChart alerts={filterAlertsByDays(alerts, 30)} />
             </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Device Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold">
-                {onlineDevices}/{totalDevices}
-              </p>
-              <p className="text-slate-500">
-                Online devices · {offlineDevices} offline
-              </p>
-            </CardContent>
+            <CardFooter className="flex-col gap-2 text-sm">
+              <div className="text-muted-foreground leading-none">
+                Showing total alerts for the last 30 days
+              </div>
+            </CardFooter>
           </Card>
         </div>
 
         {/* Recent critical alerts */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent critical alerts</CardTitle>
+            <CardTitle>Critical Alerts</CardTitle>
+            <CardDescription>All recent critical alerts </CardDescription>
           </CardHeader>
           <CardContent>
             {recentCriticalAlerts.length === 0 ? (

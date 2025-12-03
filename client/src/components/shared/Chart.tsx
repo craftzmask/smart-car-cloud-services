@@ -3,8 +3,6 @@ import {
   BarChart,
   CartesianGrid,
   LabelList,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   XAxis,
@@ -66,31 +64,6 @@ export function AlertLineChart({ alerts }: AlertPieChartProps) {
         <ChartLegend content={<ChartLegendContent />} />
         <Pie data={chartData} label dataKey="quantity" nameKey="severity" />
       </PieChart>
-    </ChartContainer>
-  );
-
-  return (
-    <ChartContainer config={chartConfig} className="h-[200px] w-full">
-      <BarChart accessibilityLayer data={chartData}>
-        <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="severity"
-          tickLine={false}
-          tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value) => capitalize(value)}
-        />
-        <ChartTooltip content={<ChartTooltipContent />} />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Bar dataKey="quantity" fill="var(--color-desktop)" radius={4}>
-          <LabelList
-            position="top"
-            offset={12}
-            className="fill-foreground"
-            fontSize={12}
-          />
-        </Bar>
-      </BarChart>
     </ChartContainer>
   );
 }

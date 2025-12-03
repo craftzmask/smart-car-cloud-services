@@ -28,7 +28,6 @@ import SimpleMap from "@/components/shared/Map";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { CarStatusBadge } from "@/components/status/CarStatusBadge";
 import { AlertLineChart, AlertTypeBarChart } from "@/components/shared/Chart";
-import { Alert } from "@/components/ui/alert";
 
 export function OwnerOverviewPage() {
   const ownerId = "u-owner-1";

@@ -153,7 +153,7 @@ const alerts: Alert[] = [
   },
   {
     id: "alert-7",
-    carId: "car-3",
+    carId: "car-1",
     deviceId: "dev-2",
     type: "ROAD_TRAFFIC",
     severity: "WARN",
@@ -176,7 +176,7 @@ const alerts: Alert[] = [
   },
   {
     id: "alert-9",
-    carId: "car-3",
+    carId: "car-1",
     deviceId: "dev-3",
     type: "ENVIRONMENTAL_SOUNDS",
     severity: "INFO",
@@ -210,7 +210,7 @@ const alerts: Alert[] = [
   },
   {
     id: "alert-12",
-    carId: "car-3",
+    carId: "car-2",
     deviceId: "dev-1",
     type: "HUMAN_SCREAM",
     severity: "CRITICAL",
@@ -244,7 +244,7 @@ const alerts: Alert[] = [
   },
   {
     id: "alert-15",
-    carId: "car-3",
+    carId: "car-2",
     deviceId: "dev-3",
     type: "ENVIRONMENTAL_SOUNDS",
     severity: "INFO",
@@ -278,7 +278,7 @@ const alerts: Alert[] = [
   },
   {
     id: "alert-18",
-    carId: "car-3",
+    carId: "car-1",
     deviceId: "dev-2",
     type: "EMERGENCY_SIRENS",
     severity: "INFO",

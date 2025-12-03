@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { AddAlertTypeDialog } from "../components/AddAlertTypeDialog";
 import { EditAlertTypeDialog } from "../components/EditAlertTypeDialog";
 import { DeleteAlertTypeDialog } from "../components/DeleteAlertTypeDialog";
+import { PenLine, Plus, Trash2 } from "lucide-react";
 
 export function CloudAlertTypesPage() {
   const ownerId = "u-owner-1";
@@ -132,6 +133,7 @@ export function CloudAlertTypesPage() {
             <CardTitle className="flex items-center justify-between">
               Predefined alert types
               <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus />
                 Add Alert Type
               </Button>
             </CardTitle>
@@ -180,6 +182,7 @@ export function CloudAlertTypesPage() {
                             setIsEditDialogOpen(true);
                           }}
                         >
+                          <PenLine />
                           Edit
                         </Button>
                         <Button
@@ -188,6 +191,7 @@ export function CloudAlertTypesPage() {
                             setIsDeleteDialogOpen(true);
                           }}
                         >
+                          <Trash2 />
                           Remove
                         </Button>
                       </TableCell>
