@@ -28,11 +28,21 @@ import Error from "@/components/shared/Error";
 import { CarStatusBadge } from "@/components/status/CarStatusBadge";
 import { AlertStatusBadge } from "@/components/status/AlertStatusBadge";
 import { AlertSeverityBadge } from "@/components/status/AlertSeverityBadge";
-import { formatDate } from "@/utils";
+import { capitalize, formatDate } from "@/utils";
 import { useState } from "react";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Search } from "lucide-react";
+
+type SeverityFilter = "ALL" | "INFO" | "WARN" | "CRITICAL";
 
 export function CloudDatabasePage() {
   const ownerId = "u-owner-1";
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
+  const [alertSearch, setAlertSearch] = useState("");
 
   const { data, isLoading, error } = useOwnerDashboard(ownerId);
 
@@ -43,11 +53,6 @@ export function CloudDatabasePage() {
   const cars = data.cars as Car[];
   const devices = data.devices as IoTDevice[];
   const alerts = data.alerts as Alert[];
-
-  type SeverityFilter = "ALL" | "INFO" | "WARN" | "CRITICAL";
-
-  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("ALL");
-  const [alertSearch, setAlertSearch] = useState("");
 
   // Precompute counts for cars
   const carsWithCounts = cars.map((car) => {
@@ -106,17 +111,32 @@ export function CloudDatabasePage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="cars">
-            <TabsList>
-              <TabsTrigger value="cars" className="px-6">
-                Cars
-              </TabsTrigger>
-              <TabsTrigger value="devices" className="px-6">
-                IoT devices
-              </TabsTrigger>
-              <TabsTrigger value="alerts" className="px-6">
-                Alerts
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="cars" className="px-6">
+                  Cars
+                </TabsTrigger>
+                <TabsTrigger value="devices" className="px-6">
+                  IoT devices
+                </TabsTrigger>
+                <TabsTrigger value="alerts" className="px-6">
+                  Alerts
+                </TabsTrigger>
+              </TabsList>
+              <InputGroup className="w-96">
+                <InputGroupInput
+                  placeholder="Search..."
+                  onChange={(e) => setAlertSearch(e.target.value)}
+                />
+                <InputGroupAddon>
+                  <Search />
+                </InputGroupAddon>
+                <InputGroupAddon align="inline-end">
+                  {filteredAlerts.length} result
+                  {filteredAlerts.length === 1 ? "" : "s"}
+                </InputGroupAddon>
+              </InputGroup>
+            </div>
 
             <TabsContent value="cars">
               <Card>
@@ -229,7 +249,7 @@ export function CloudDatabasePage() {
                               )}
                             </TableCell>
                             <TableCell className="text-sm text-slate-700">
-                              {device.type}
+                              {device.deviceType}
                             </TableCell>
                             <TableCell className="text-sm">
                               <span
@@ -328,7 +348,7 @@ export function CloudDatabasePage() {
                                   </span>
                                 )}
                               </TableCell>
-                              <TableCell>{alert.type}</TableCell>
+                              <TableCell>{capitalize(alert.type)}</TableCell>
                               <TableCell>
                                 <AlertSeverityBadge severity={alert.severity} />
                               </TableCell>

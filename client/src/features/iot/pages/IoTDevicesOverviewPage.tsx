@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Bell, BellRing, CarIcon } from "lucide-react";
+import { Activity } from "react";
 
 export function IoTDevicesOverviewPage() {
   const ownerId = "u-owner-1";
@@ -41,6 +43,37 @@ export function IoTDevicesOverviewPage() {
 
   const totalDevices = devices.length;
   const totalCars = cars.length;
+
+  const metrics = [
+    {
+      label: "Total Cars",
+      value: cars.length,
+      icon: CarIcon,
+      color: "text-purple-600",
+      trend: "+1",
+    },
+    {
+      label: "Active Alerts",
+      value: 0,
+      icon: Bell,
+      color: "text-blue-600",
+      trend: "+1",
+    },
+    {
+      label: "IoT Devices",
+      value: devices.length,
+      icon: Activity,
+      color: "text-orange-600",
+      trend: "+2",
+    },
+    {
+      label: "Critical Alerts",
+      value: 0,
+      icon: BellRing,
+      color: "text-rose-600",
+      trend: "+1",
+    },
+  ];
 
   return (
     <IoTLayout>

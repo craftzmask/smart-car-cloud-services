@@ -18,7 +18,6 @@ export function OwnerLayout({ children }: OwnerLayoutProps) {
   const navItems = [
     { label: "Overview", path: "/owner/overview" },
     { label: "Account", path: "/owner/account" },
-    { label: "Notifications", path: "/owner/notifications" },
     { label: "My Cars", path: "/owner/dashboard" },
   ];
 

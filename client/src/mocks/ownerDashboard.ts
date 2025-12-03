@@ -294,87 +294,108 @@ const carServiceConfigs: CarServiceConfig[] = [
     carId: "car-1",
     services: [
       {
-        key: "OUTSIDE_NOISE",
-        label: "Outside noise detection",
+        key: "ALERT_SOUNDS",
+        label: "Alert Sounds",
         description:
-          "Detects sirens, collisions, and road emergencies around the car.",
+          "Detects general alert tones or warning signals around the vehicle.",
         enabled: true,
       },
       {
-        key: "INSIDE_NOISE",
-        label: "Inside cabin noise detection",
-        description: "Monitors unusual sounds inside the cabin.",
-        enabled: true,
-      },
-      {
-        key: "PASSENGER_SOUND",
-        label: "Passenger sound detection",
+        key: "EMERGENCY_SIRENS",
+        label: "Emergency Sirens",
         description:
-          "Detects shouting, distress, or abnormal passenger activity.",
+          "Detects emergency vehicle sirens such as police, ambulance, or fire trucks.",
         enabled: true,
       },
       {
-        key: "ANIMAL_SOUND",
-        label: "Animal sound detection",
-        description: "Detects barking, meowing, or other animal noises.",
+        key: "ENVIRONMENTAL_SOUNDS",
+        label: "Environmental Sounds",
+        description:
+          "Monitors environmental noise such as wind, rain, and ambient sounds.",
+        enabled: true,
+      },
+      {
+        key: "ROAD_TRAFFIC",
+        label: "Road Traffic",
+        description:
+          "Detects horns, engines, and surrounding traffic-related noises.",
+        enabled: true,
+      },
+      {
+        key: "COLLISION_SOUNDS",
+        label: "Collision Sounds",
+        description:
+          "Detects impact or crash sounds that indicate a possible collision.",
+        enabled: true,
+      },
+      {
+        key: "HUMAN_SCREAM",
+        label: "Human Scream",
+        description:
+          "Detects human screaming, shouting, or distress vocalization.",
+        enabled: true,
+      },
+      {
+        key: "ANIMAL_SOUNDS",
+        label: "Animal Sounds",
+        description:
+          "Detects barking, meowing, or other animal-related noises.",
         enabled: false,
-      },
-      {
-        key: "ENGINE_ANOMALY",
-        label: "Engine anomaly detection",
-        description: "Listens for abnormal engine knock or grinding sounds.",
-        enabled: true,
-      },
-      {
-        key: "COLLISION_SOUND",
-        label: "Collision sound detection",
-        description:
-          "Detects sudden impact sounds that may indicate a collision.",
-        enabled: true,
       },
     ],
   },
+
   {
     carId: "car-2",
     services: [
       {
-        key: "OUTSIDE_NOISE",
-        label: "Outside noise detection",
+        key: "ALERT_SOUNDS",
+        label: "Alert Sounds",
         description:
-          "Detects sirens, collisions, and road emergencies around the car.",
+          "Detects general alert tones or warning signals around the vehicle.",
         enabled: true,
       },
       {
-        key: "INSIDE_NOISE",
-        label: "Inside cabin noise detection",
-        description: "Monitors unusual sounds inside the cabin.",
-        enabled: false,
-      },
-      {
-        key: "PASSENGER_SOUND",
-        label: "Passenger sound detection",
+        key: "EMERGENCY_SIRENS",
+        label: "Emergency Sirens",
         description:
-          "Detects shouting, distress, or abnormal passenger activity.",
+          "Detects emergency vehicle sirens such as police, ambulance, or fire trucks.",
         enabled: false,
       },
       {
-        key: "ANIMAL_SOUND",
-        label: "Animal sound detection",
-        description: "Detects barking, meowing, or other animal noises.",
+        key: "ENVIRONMENTAL_SOUNDS",
+        label: "Environmental Sounds",
+        description:
+          "Monitors environmental noise such as wind, rain, and ambient sounds.",
         enabled: false,
       },
       {
-        key: "ENGINE_ANOMALY",
-        label: "Engine anomaly detection",
-        description: "Listens for abnormal engine knock or grinding sounds.",
+        key: "ROAD_TRAFFIC",
+        label: "Road Traffic",
+        description:
+          "Detects horns, engines, and surrounding traffic-related noises.",
         enabled: true,
       },
       {
-        key: "COLLISION_SOUND",
-        label: "Collision sound detection",
+        key: "COLLISION_SOUNDS",
+        label: "Collision Sounds",
         description:
-          "Detects sudden impact sounds that may indicate a collision.",
+          "Detects impact or crash sounds that indicate a possible collision.",
         enabled: true,
+      },
+      {
+        key: "HUMAN_SCREAM",
+        label: "Human Scream",
+        description:
+          "Detects human screaming, shouting, or distress vocalization.",
+        enabled: true,
+      },
+      {
+        key: "ANIMAL_SOUNDS",
+        label: "Animal Sounds",
+        description:
+          "Detects barking, meowing, or other animal-related noises.",
+        enabled: false,
       },
     ],
   },
@@ -418,33 +439,13 @@ export const mockOwnerDashboardData: OwnerDashboardData = {
   aiModels: [
     {
       id: "model-1",
-      name: "Engine Noise Classifier",
-      type: "Engine audio anomaly detection (CNN-LSTM)",
-      version: "1.2.0",
+      name: "Audio Spectrogram Classifier",
+      type: "Transform",
+      version: "1.0.0",
       status: "RUNNING",
       updatedAt: "2025-11-20T10:00:00Z",
       accuracy: 94.2,
       deploymentStage: "PRODUCTION",
-    },
-    {
-      id: "model-2",
-      name: "Cabin Voice Detector",
-      type: "Passenger/child voice classification",
-      version: "0.9.3",
-      status: "TRAINING",
-      updatedAt: "2025-11-22T15:30:00Z",
-      accuracy: 89.7,
-      deploymentStage: "STAGING",
-    },
-    {
-      id: "model-3",
-      name: "Glass Break Detector",
-      type: "Security event detection",
-      version: "1.0.0",
-      status: "OFFLINE",
-      updatedAt: "2025-11-18T08:45:00Z",
-      accuracy: 91.3,
-      deploymentStage: "ARCHIVED",
     },
   ],
   alertTypes: [
