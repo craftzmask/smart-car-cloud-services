@@ -1,9 +1,9 @@
 import Error from "@/components/shared/Error";
 import Loading from "@/components/shared/Loading";
 import type { Car } from "@/domain/types";
-import { useOwnerDashboard } from "@/features/owner/hooks/useOwnerDashboard";
 import { IoTLayout } from "../components/IoTLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useIotDashboard } from "../hooks/useIotDashboard";
 import {
   Table,
   TableBody,
@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/table";
 
 export function IoTDevicesOverviewPage() {
-  const ownerId = "u-owner-1";
-  const { data, isLoading, error } = useOwnerDashboard(ownerId);
+  const { data, isLoading, error } = useIotDashboard();
 
   if (isLoading) return <Loading />;
 

@@ -1,27 +1,32 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "@/auth/AuthContext";
+import Loading from "@/components/shared/Loading";
+import Error from "@/components/shared/Error";
 import { OwnerLayout } from "@/features/owner/components/OwnerLayout";
 import { CarSummaryCard } from "@/features/owner/components/CarSummaryCard";
-import type {
-  CarServiceConfig,
-  Alert,
-  IntelligenceServiceKey,
-} from "@/domain/types";
 import { AlertsSection } from "../components/AlertsSection";
 import { DevicesSection } from "../components/DevicesSection";
-import { useOwnerDashboard } from "../hooks/useOwnerDashboard";
 import { AlertDetailDialog } from "../components/AlertDetailDialog";
-import { useEffect, useState } from "react";
 import { OwnerServiceConfigSection } from "../components/OwnerServiceConfigSection";
 import { AlertsFilterBar } from "../components/AlertsFilterBar";
 import type { AlertSeverityFilter } from "../components/AlertsFilterBar";
-import Loading from "@/components/shared/Loading";
-import Error from "@/components/shared/Error";
+import { Separator } from "@/components/ui/separator";
+import type {
+  Alert,
+  CarServiceConfig,
+  IntelligenceServiceKey,
+} from "@/domain/types";
+import { useOwnerDashboard } from "../hooks/useOwnerDashboard";
 
 export function OwnerDashboardPage() {
-  const ownerId = "u-owner-1";
+  const { user } = useAuth();
+  const ownerId = user?.id || "me";
   const { data, isLoading, error } = useOwnerDashboard(ownerId);
+
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [serviceConfigs, setServiceConfigs] = useState<CarServiceConfig[]>([]);
+  const [alertsState, setAlertsState] = useState<Alert[]>([]);
   const [severityFilter, setSeverityFilter] =
     useState<AlertSeverityFilter>("ALL");
   const [alertSearch, setAlertSearch] = useState<string>("");
@@ -29,6 +34,9 @@ export function OwnerDashboardPage() {
   useEffect(() => {
     if (data?.carServiceConfigs) {
       setServiceConfigs(data.carServiceConfigs);
+    }
+    if (data?.alerts) {
+      setAlertsState(data.alerts);
     }
   }, [data]);
 
@@ -38,13 +46,14 @@ export function OwnerDashboardPage() {
   }
 
   function handleAcknowledge(alertId: string) {
-    const updatedAlerts = alerts.map((a) =>
-      a.id === alertId ? { ...a, status: "ACKNOWLEDGED" } : a
+    setAlertsState((prevAlerts) =>
+      prevAlerts.map((a) =>
+        a.id === alertId ? { ...a, status: "ACKNOWLEDGED" as const } : a
+      )
     );
 
-    data.alerts = updatedAlerts;
     setSelectedAlert((prev) =>
-      prev ? { ...prev, status: "ACKNOWLEDGED" } : prev
+      prev ? { ...prev, status: "ACKNOWLEDGED" as const } : prev
     );
   }
 
@@ -68,16 +77,27 @@ export function OwnerDashboardPage() {
   }
 
   if (isLoading) return <Loading />;
-
   if (error || !data) return <Error error={error} />;
 
-  const { cars, alerts, devices } = data;
+  const { cars, devices, alertTypes = [] } = data;
 
   return (
-    <OwnerLayout>
+    <OwnerLayout
+      cars={cars}
+      ownerName={data.owner?.username || data.owner?.cognitoUsername}
+    >
       {(selectedCarId) => {
-        const selectedCar = cars.find((c) => c.id === selectedCarId)!; // ! for removing warning
-        const carAlerts = alerts.filter(
+        const selectedCar =
+          cars.find((c) => c.id === (selectedCarId || "")) || null;
+        if (!selectedCar) {
+          return (
+            <div className="text-sm text-slate-500">
+              No car selected or no cars available.
+            </div>
+          );
+        }
+
+        const carAlerts = alertsState.filter(
           (alert) => alert.carId === selectedCarId
         );
         const carDevices = devices.filter(
@@ -96,7 +116,12 @@ export function OwnerDashboardPage() {
           const query = alertSearch.trim().toLowerCase();
           if (!query) return severityOk;
 
-          const haystack = `${alert.type} ${alert.message}`.toLowerCase();
+          const alertTypeText = (alert.type || alert.alertType || "")
+            .toString()
+            .toLowerCase();
+          const haystack = `${alertTypeText} ${
+            alert.description || ""
+          }`.toLowerCase();
           return severityOk && haystack.includes(query);
         });
 
@@ -104,9 +129,12 @@ export function OwnerDashboardPage() {
           <div className="space-y-6">
             <CarSummaryCard
               car={selectedCar}
+              totalDevices={carDevices.length}
               totalAlerts={totalAlerts}
               criticalAlerts={criticalAlerts}
             />
+
+            <Separator />
 
             <AlertsFilterBar
               severity={severityFilter}
@@ -119,6 +147,7 @@ export function OwnerDashboardPage() {
 
             <AlertsSection
               alerts={filteredAlerts}
+              alertTypes={alertTypes}
               onSelectAlert={handleSelectAlert}
             />
 

@@ -87,7 +87,7 @@ User.init(
         USER_ROLES.IOT_TEAM
       ),
       allowNull: false,
-      defaultValue: USER_ROLES.USER,
+      defaultValue: USER_ROLES.CAR_OWNER,
     },
     cognitoSub: {
       type: DataTypes.STRING(255),

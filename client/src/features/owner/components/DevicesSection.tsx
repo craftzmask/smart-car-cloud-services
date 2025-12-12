@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/shared/EmptyState";
 import { DeviceStatusBadge } from "@/components/status/DeviceStatusBadge";
 import {
   Card,
@@ -7,14 +8,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { IoTDevice } from "@/domain/types";
-import { formatDate } from "@/utils";
+import { capitalize, formatDate } from "@/utils";
 
 interface DevicesSectionProps {
   devices: IoTDevice[];
-}
-
-function formatType(deviceType: IoTDevice["deviceType"]) {
-  return deviceType.charAt(0) + deviceType.slice(1).toLowerCase();
 }
 
 export function DevicesSection({ devices }: DevicesSectionProps) {
@@ -32,29 +29,24 @@ export function DevicesSection({ devices }: DevicesSectionProps) {
       </CardHeader>
       <CardContent>
         {devices.length === 0 ? (
-          <div>Ask your IoT team to register devices for this vehicle.</div>
+          <EmptyState message="Contact to an IoT team to register devices for this vehicle" />
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {devices.map((device) => (
-              <div
-                key={device.id}
-                className="border border-slate-200 rounded-md p-3 flex flex-col gap-2 bg-slate-50/60"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-slate-900 line-clamp-1">
-                      {device.deviceName}
+              <Card key={device.id} className="bg-slate-50/60">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <p>{device.deviceName}</p>
+                    <DeviceStatusBadge status={device.status} />
+                  </CardTitle>
+                  <CardDescription>
+                    <p>{capitalize(device.deviceType)}</p>
+                    <p className="text-sm text-slate-500 mt-2">
+                      Connected since {formatDate(device.createdAt)}
                     </p>
-                    <p className="text-slate-500">
-                      {formatType(device.deviceType)}
-                    </p>
-                  </div>
-                  <DeviceStatusBadge status={device.status} />
-                </div>
-                <p className="text-sm text-slate-500">
-                  Connected since {formatDate(device.createdAt)}
-                </p>
-              </div>
+                  </CardDescription>
+                </CardHeader>
+              </Card>
             ))}
           </div>
         )}

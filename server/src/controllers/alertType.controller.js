@@ -24,20 +24,41 @@ class AlertTypeController {
   }
 
   async create(request, response) {
-    const { type } = request.body || {};
+    const { type, name, description, defaultSeverity, category, enabled } =
+      request.body || {};
     if (!type) throw new BadRequestError("type is required");
 
-    const data = await AlertTypeService.create({ type });
+    const data = await AlertTypeService.create({
+      type,
+      name,
+      description,
+      defaultSeverity,
+      category,
+      enabled,
+    });
 
     return new CREATED({ message: "Alert type created successfully", data }).send(response);
   }
 
   async rename(request, response) {
     const { type } = request.params;
-    const { newType } = request.body || {};
-    if (!newType) throw new BadRequestError("newType is required");
+    const {
+      newType,
+      name,
+      description,
+      defaultSeverity,
+      category,
+      enabled,
+    } = request.body || {};
 
-    const data = await AlertTypeService.renameType(type, newType);
+    const data = await AlertTypeService.renameType(type, {
+      newType,
+      name,
+      description,
+      defaultSeverity,
+      category,
+      enabled,
+    });
 
     return new OK({ message: "Alert type updated successfully", data }).send(response);
   }

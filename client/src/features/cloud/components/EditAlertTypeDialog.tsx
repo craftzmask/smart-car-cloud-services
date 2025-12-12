@@ -41,6 +41,7 @@ const CATEGORY_OPTIONS: AlertCategory[] = [
   "MAINTENANCE",
   "ANIMAL",
   "PASSENGER",
+  "UNKNOWN",
 ];
 
 export function EditAlertTypeDialog({
@@ -59,12 +60,12 @@ export function EditAlertTypeDialog({
 
   useEffect(() => {
     if (open && alertType) {
-      setKeyValue(alertType.key);
-      setName(alertType.name);
-      setCategory(alertType.category);
-      setDefaultSeverity(alertType.defaultSeverity);
-      setDescription(alertType.description);
-      setEnabled(alertType.enabled);
+      setKeyValue(alertType.type || alertType.key || "");
+      setName(alertType.name || "");
+      setCategory((alertType.category as AlertCategory) || "UNKNOWN");
+      setDefaultSeverity(alertType.defaultSeverity || "INFO");
+      setDescription(alertType.description || "");
+      setEnabled(alertType.enabled ?? true);
     }
   }, [open, alertType]);
 
@@ -75,6 +76,7 @@ export function EditAlertTypeDialog({
 
     onSave({
       ...alertType,
+      type: keyValue.trim(),
       key: keyValue.trim(),
       name: name.trim(),
       category,
@@ -86,7 +88,7 @@ export function EditAlertTypeDialog({
     onClose();
   }
 
-  if (!alertType) return;
+  if (!alertType) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -131,7 +133,9 @@ export function EditAlertTypeDialog({
                   <SelectGroup>
                     <SelectLabel>Select Category</SelectLabel>
                     {CATEGORY_OPTIONS.map((c) => (
-                      <SelectItem value={c}>{capitalize(c)}</SelectItem>
+                      <SelectItem key={c} value={c}>
+                        {capitalize(c)}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>

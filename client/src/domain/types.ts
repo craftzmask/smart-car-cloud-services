@@ -6,7 +6,9 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  createdAt: string; // ISO timestamp
+  createdAt: string;
+  username?: string;
+  cognitoUsername?: string;
 }
 
 // ---- CAR ----
@@ -28,7 +30,7 @@ export interface CarLocation {
   carId: string;
   latitude: number;
   longitude: number;
-  lastSeenAt: string; // ISO timestamp
+  lastSeenAt: string;
 }
 
 // ---- IoT Device ----
@@ -53,9 +55,11 @@ export interface Alert {
   carId: string;
   deviceId?: string;
   type: string;
+  alertType?: string;
   severity: AlertSeverity;
   status: AlertStatus;
-  message: string;
+  description?: string;
+  message?: string;
   confidenceScore: number;
   createdAt: string;
   acknowledgedAt?: string;
@@ -104,6 +108,8 @@ export interface OwnerSubscription {
 // ---- AI Models ----
 export type AiModeStatus = "RUNNING" | "TRAINING" | "OFFLINE";
 
+export type DeploymentStage = "PRODUCTION" | "STAGING" | "ARCHIVED";
+
 export interface AiModel {
   id: string;
   name: string;
@@ -111,6 +117,9 @@ export interface AiModel {
   version: string;
   status: AiModeStatus;
   updatedAt: string;
+  accuracy: number; // e.g. 94.2
+  deploymentStage: DeploymentStage;
+  results?: any[];
 }
 
 export type AlertCategory =
@@ -118,16 +127,18 @@ export type AlertCategory =
   | "SECURITY"
   | "MAINTENANCE"
   | "ANIMAL"
-  | "PASSENGER";
+  | "PASSENGER"
+  | "UNKNOWN";
 
 export interface AlertTypeDef {
-  id: string;
-  key: string;
-  name: string;
-  category: AlertCategory;
-  defaultSeverity: "INFO" | "WARN" | "CRITICAL";
-  description: string;
-  enabled: boolean;
+  id?: string;
+  key?: string;
+  type?: string;
+  name?: string;
+  category?: AlertCategory | "UNKNOWN";
+  defaultSeverity?: "INFO" | "WARN" | "CRITICAL";
+  description?: string;
+  enabled?: boolean;
 }
 
 // ---- Owner Dashboard aggregate ----

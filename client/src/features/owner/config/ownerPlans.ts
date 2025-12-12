@@ -14,30 +14,20 @@ export const OWNER_PLANS: PlanOption[] = [
     name: "Basic",
     pricePerMonth: 9.99,
     description: "Essential monitoring for a single smart car.",
-    features: ["1 car included", "Basic alert history", "Email notifications"],
+    features: ["Basic alert history", "Email notifications"],
   },
   {
     id: "STANDARD",
     name: "Standard",
     pricePerMonth: 19.99,
     description: "Enhanced safety features for daily driving.",
-    features: [
-      "Up to 2 cars",
-      "Extended alert history",
-      "Email + in-app notifications",
-      "Engine anomaly detection",
-    ],
+    features: ["Extended alert history", "Email + in-app notifications"],
   },
   {
     id: "PREMIUM",
     name: "Premium",
     pricePerMonth: 39.99,
     description: "Full intelligence suite for all your vehicles.",
-    features: [
-      "Up to 5 cars",
-      "Full alert history",
-      "Email + SMS + in-app notifications",
-      "Advanced audio models",
-    ],
+    features: ["Full alert history", "Email + SMS + in-app notifications"],
   },
 ];

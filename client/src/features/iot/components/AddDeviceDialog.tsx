@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { IoTDevice } from "@/domain/types";
+import type { IoTDevice, DeviceType } from "@/domain/types";
 import { useEffect, useState, type FormEvent } from "react";
 
 interface AddDeviceDialogProps {
@@ -34,7 +34,7 @@ export function AddDeviceDialog({
   onSave,
 }: AddDeviceDialogProps) {
   const [deviceName, setDeviceName] = useState("");
-  const [deviceType, setDeviceType] = useState("AUDIO");
+  const [deviceType, setDeviceType] = useState<DeviceType>("AUDIO");
   const [status, setStatus] = useState<"ONLINE" | "OFFLINE">("ONLINE");
 
   useEffect(() => {
@@ -52,6 +52,7 @@ export function AddDeviceDialog({
       deviceName: deviceName.trim(),
       deviceType,
       status,
+      createdAt: new Date().toISOString(),
     });
 
     onClose();
@@ -76,14 +77,14 @@ export function AddDeviceDialog({
             </Field>
 
             <Field>
-              <FieldLabel>Device type</FieldLabel>
-              <Select
-                value={deviceType}
-                onValueChange={(value) => setDeviceType(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Device Type" />
-                </SelectTrigger>
+            <FieldLabel>Device type</FieldLabel>
+            <Select
+              value={deviceType}
+              onValueChange={(value) => setDeviceType(value as DeviceType)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Device Type" />
+              </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Device Type</SelectLabel>

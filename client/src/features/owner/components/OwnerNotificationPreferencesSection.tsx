@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/shared/EmptyState";
 import {
   Card,
   CardContent,
@@ -5,6 +6,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/components/ui/item";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import type {
   NotificationPreference,
@@ -14,7 +23,7 @@ import type {
 
 interface OwnerNotificationPreferencesSectionProps {
   planId: PlanId;
-  preferences: NotificationPreference[];
+  preferences: NotificationPreference[] | null | undefined;
   onToggleChannel: (channel: NotificationChannelKey, enabled: boolean) => void;
 }
 
@@ -23,7 +32,9 @@ export function OwnerNotificationPreferencesSection({
   preferences,
   onToggleChannel,
 }: OwnerNotificationPreferencesSectionProps) {
-  const filteredPreferences = preferences.filter((pref) => {
+  const safePreferences = Array.isArray(preferences) ? preferences : [];
+
+  const filteredPreferences = safePreferences.filter((pref) => {
     if (planId === "PREMIUM") return true;
 
     if (planId === "STANDARD") {
@@ -41,29 +52,29 @@ export function OwnerNotificationPreferencesSection({
           Choose how you want to receive alerts.
         </CardDescription>
       </CardHeader>
+      <Separator />
       <CardContent>
-        {preferences.length === 0 ? (
+        {safePreferences.length === 0 ? (
           <div className=" text-slate-500">
             No notification channels configured.
           </div>
         ) : (
           <div className="space-y-3">
             {filteredPreferences.map((pref) => (
-              <div
-                key={pref.channel}
-                className="flex items-center justify-between gap-4 border border-slate-100 rounded-md px-3 py-2.5 bg-slate-50/60"
-              >
-                <div>
-                  <p className="font-medium text-slate-900">{pref.label}</p>
-                  <p className="text-sm text-slate-500">{pref.description}</p>
-                </div>
-                <Switch
-                  checked={pref.enabled}
-                  onCheckedChange={(checked) =>
-                    onToggleChannel(pref.channel, checked)
-                  }
-                />
-              </div>
+              <Item variant="outline" className="bg-slate-50/60">
+                <ItemContent>
+                  <ItemTitle>{pref.label}</ItemTitle>
+                  <ItemDescription>{pref.description}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={pref.enabled}
+                    onCheckedChange={(checked) =>
+                      onToggleChannel(pref.channel, checked)
+                    }
+                  />
+                </ItemActions>
+              </Item>
             ))}
           </div>
         )}

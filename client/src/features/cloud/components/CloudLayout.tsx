@@ -1,5 +1,7 @@
 import { useAuth } from "@/auth/AuthContext";
 import { Separator } from "@/components/ui/separator";
+import { Toaster } from "@/components/ui/sonner";
+
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router";
 
@@ -12,15 +14,45 @@ export function CloudLayout({ children }: CloudLayoutProps) {
   const { user, logout } = useAuth();
 
   const navItems = [
-    { label: "Overview", path: "/cloud/overview" },
-    { label: "Alerts", path: "/cloud/alerts" },
-    { label: "Alert Types", path: "/cloud/alert-types" },
-    { label: "AI models", path: "/cloud/models" },
-    { label: "Database", path: "/cloud/database" }, // future
+    {
+      label: "Dashboard",
+      description:
+        "A centralized view to monitor, manage, and optimize cloud environment",
+      path: "/cloud/overview",
+    },
+    {
+      label: "Alerts",
+      description:
+        "System-wide audio intelligence alerts across all smart cars",
+      path: "/cloud/alerts",
+    },
+    {
+      label: "Alert Types",
+      description:
+        "Configure predefined audio-based alert types used across cars, IoT devices, and AI models",
+      path: "/cloud/alert-types",
+    },
+    {
+      label: "AI models",
+      description: "Manage, monitor, and deploy your AI and ML models",
+      path: "/cloud/models",
+    },
+    {
+      label: "Database",
+      description:
+        "A centralized view of all database systems and configurations",
+      path: "/cloud/database",
+    }, // future
   ];
 
+  const currentItem = navItems.find((item) =>
+    location.pathname.startsWith(item.path)
+  );
+
+  if (!currentItem) return <p>No URL Found</p>;
+
   return (
-    <div className="min-h-screen flex bg-slate-100">
+    <div className="min-h-screen flex ">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r p-4 flex flex-col">
         <div className="mb-6">
@@ -61,7 +93,21 @@ export function CloudLayout({ children }: CloudLayoutProps) {
         </nav>
       </aside>
 
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1">
+        <Toaster />
+        {/* Header */}
+        <div className="py-2 border-b">
+          <div className="flex flex-col h-16 px-6">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {currentItem.label}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {currentItem.description}
+            </p>
+          </div>
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

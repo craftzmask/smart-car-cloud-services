@@ -15,7 +15,7 @@ const {
 const { CognitoJwtVerifier } = require("aws-jwt-verify");
 const crypto = require("crypto");
 
-const ALLOWED_ROLES = ["user", "admin", "staff"];
+const ALLOWED_ROLES = ["car_owner", "iot_team", "staff"];
 
 const buildConfigError = (message) => {
   const error = new Error(message);
@@ -27,10 +27,15 @@ const buildConfigError = (message) => {
 
 class CognitoService {
   constructor() {
-    this.client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
+    this.client = new CognitoIdentityProviderClient({
+      region: process.env.AWS_REGION,
+    });
     this.userPoolId = process.env.AWS_COGNITO_USER_POOL_ID;
     const rawClientId = process.env.AWS_COGNITO_CLIENT_ID;
-    this.clientId = typeof rawClientId === "string" ? rawClientId.trim() || undefined : rawClientId;
+    this.clientId =
+      typeof rawClientId === "string"
+        ? rawClientId.trim() || undefined
+        : rawClientId;
     this.clientSecret = process.env.AWS_COGNITO_CLIENT_SECRET;
     this.availableGroups = ALLOWED_ROLES;
     this.tokenVerifiers = this.initializeTokenVerifiers();
@@ -46,22 +51,29 @@ class CognitoService {
   }
 
   ensureValidRole(role) {
-    const normalized = typeof role === "string" ? role.toLowerCase().trim() : role;
+    const normalized =
+      typeof role === "string" ? role.toLowerCase().trim() : role;
     if (!this.availableGroups.includes(normalized)) {
-      throw new Error(`Invalid role. Must be one of: ${this.availableGroups.join(", ")}`);
+      throw new Error(
+        `Invalid role. Must be one of: ${this.availableGroups.join(", ")}`
+      );
     }
     return normalized;
   }
 
   generateSecretHash(username) {
     if (!this.clientSecret) return undefined;
-    return crypto.createHmac("SHA256", this.clientSecret).update(username + this.clientId).digest("base64");
+    return crypto
+      .createHmac("SHA256", this.clientSecret)
+      .update(username + this.clientId)
+      .digest("base64");
   }
 
   initializeTokenVerifiers() {
     if (!this.userPoolId) return null;
 
-    const verifierClientId = typeof this.clientId === "string" ? this.clientId.trim() : this.clientId;
+    const verifierClientId =
+      typeof this.clientId === "string" ? this.clientId.trim() : this.clientId;
     return {
       id: verifierClientId
         ? CognitoJwtVerifier.create({
@@ -80,7 +92,8 @@ class CognitoService {
 
   async decodeToken(token) {
     if (!token) throw new Error("Authorization token is required");
-    if (!this.tokenVerifiers) throw new Error("Cognito token verifiers are not configured");
+    if (!this.tokenVerifiers)
+      throw new Error("Cognito token verifiers are not configured");
 
     const attempts = [
       { use: "id", verifier: this.tokenVerifiers.id },
@@ -208,7 +221,8 @@ class CognitoService {
     try {
       const command = new InitiateAuthCommand(params);
       const response = await this.client.send(command);
-      if (!response.AuthenticationResult) throw new Error("Authentication failed");
+      if (!response.AuthenticationResult)
+        throw new Error("Authentication failed");
 
       const userDetails = await this.getUserDetails(username);
 
@@ -231,6 +245,43 @@ class CognitoService {
     }
   }
 
+  async refreshTokens(refreshToken) {
+    this.ensureClientConfigured();
+    if (!refreshToken) {
+      const err = new Error("refreshToken is required");
+      err.name = "BadRequestError";
+      throw err;
+    }
+
+    const params = {
+      AuthFlow: "REFRESH_TOKEN_AUTH",
+      ClientId: this.clientId,
+      AuthParameters: {
+        REFRESH_TOKEN: refreshToken,
+      },
+    };
+
+    const secretHash = this.generateSecretHash("refresh-token");
+    if (secretHash) params.AuthParameters.SECRET_HASH = secretHash;
+
+    try {
+      const command = new InitiateAuthCommand(params);
+      const response = await this.client.send(command);
+      if (!response.AuthenticationResult) {
+        throw new Error("Token refresh failed");
+      }
+
+      return {
+        accessToken: response.AuthenticationResult.AccessToken,
+        idToken: response.AuthenticationResult.IdToken,
+        expiresIn: response.AuthenticationResult.ExpiresIn,
+        tokenType: response.AuthenticationResult.TokenType,
+      };
+    } catch (error) {
+      throw this.handleCognitoError(error);
+    }
+  }
+
   async getUserDetails(username) {
     try {
       const userCommand = new AdminGetUserCommand({
@@ -246,7 +297,9 @@ class CognitoService {
       }, {});
 
       const primaryRole =
-        groups.length > 0 ? groups.sort((a, b) => a.Precedence - b.Precedence)[0].GroupName : "user";
+        groups.length > 0
+          ? groups.sort((a, b) => a.Precedence - b.Precedence)[0].GroupName
+          : "user";
 
       return {
         username: userResponse.Username,
@@ -296,7 +349,8 @@ class CognitoService {
       ResourceNotFoundException: "Group not found",
     };
 
-    const message = errorMap[error.name] || error.message || "Authentication error";
+    const message =
+      errorMap[error.name] || error.message || "Authentication error";
 
     const customError = new Error(message);
     customError.name = error.name;

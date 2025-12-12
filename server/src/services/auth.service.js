@@ -2,6 +2,7 @@
 
 const User = require("../models/sql/user.model");
 const CognitoService = require("./cognito.service");
+const { USER_ROLES } = require("../types/enums");
 const {
   BadRequestError,
   AuthFailureError,
@@ -9,11 +10,11 @@ const {
   ConflictRequestError,
 } = require("../core/error.response");
 
-const VALID_ROLES = ["user", "admin", "staff"];
+const ALLOWED_ROLES = ["car_owner", "iot_team", "cloud_team", "staff"];
 
 class AuthService {
   // Register a new user
-  async signup({ username, password, email, role = "user" }) {
+  async signup({ username, password, email, role = "car_owner" }) {
     try {
       // Validate input
       if (!username || !password || !email) {
@@ -21,9 +22,9 @@ class AuthService {
       }
 
       // Validate role
-      if (!VALID_ROLES.includes(role)) {
+      if (!Object.values(USER_ROLES).includes(role)) {
         throw new BadRequestError(
-          `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}`
+          `Invalid role. Must be one of: ${Object.values(USER_ROLES).join(", ")}`
         );
       }
 
@@ -85,10 +86,21 @@ class AuthService {
   }
 
   // Authenticate user credentials
-  async login({ username, password }) {
+  async login({ username, password, loginAs }) {
     try {
       if (!username || !password) {
         throw new BadRequestError("Username and password are required");
+      }
+      if (!loginAs) {
+        throw new BadRequestError("loginAs is required");
+      }
+
+      const normalizedLoginAs =
+        typeof loginAs === "string" ? loginAs.toLowerCase().trim() : null;
+      if (normalizedLoginAs && !ALLOWED_ROLES.includes(normalizedLoginAs)) {
+        throw new BadRequestError(
+          `Invalid login role. Must be one of: ${ALLOWED_ROLES.join(", ")}`
+        );
       }
 
       // Authenticate with Cognito
@@ -106,6 +118,14 @@ class AuthService {
           cognitoSub: cognitoResult.user.username,
           emailVerified: cognitoResult.user.emailVerified,
         });
+      }
+
+      // Enforce login-as role when provided
+      const userRole = (localUser?.role || "").toLowerCase();
+      if (normalizedLoginAs && userRole !== normalizedLoginAs) {
+        throw new AuthFailureError(
+          `User is not authorized to log in as ${normalizedLoginAs}`
+        );
       }
 
       // Update last login
@@ -283,9 +303,9 @@ class AuthService {
   async updateUserRole(username, newRole) {
     try {
       // Validate role
-      if (!VALID_ROLES.includes(newRole)) {
+      if (!Object.values(USER_ROLES).includes(newRole)) {
         throw new BadRequestError(
-          `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}`
+          `Invalid role. Must be one of: ${Object.values(USER_ROLES).join(", ")}`
         );
       }
 
@@ -409,6 +429,14 @@ class AuthService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async refreshTokens({ refreshToken }) {
+    if (!refreshToken) {
+      throw new BadRequestError("refreshToken is required");
+    }
+    const tokens = await CognitoService.refreshTokens(refreshToken);
+    return { tokens };
   }
 }
 

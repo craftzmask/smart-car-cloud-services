@@ -6,6 +6,8 @@ import { OwnerAccountPage } from "@/features/owner/pages/OwnerAccountPage";
 import { IoTDevicesOverviewPage } from "@/features/iot/pages/IoTDevicesOverviewPage";
 import { IoTCarDevicesPage } from "@/features/iot/pages/IoTCarDevicesPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
+import { SignupPage } from "@/features/auth/pages/SignupPage";
+import { ConfirmSignupPage } from "@/features/auth/pages/ConfirmSignupPage";
 import { RequireAuth } from "@/auth/RequireAuth";
 import { CloudOverviewPage } from "@/features/cloud/pages/CloudOverviewPage";
 import { CloudAlertsPage } from "@/features/cloud/pages/CloudAlertsPage";
@@ -21,6 +23,14 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/signup",
+    element: <SignupPage />,
+  },
+  {
+    path: "/confirm",
+    element: <ConfirmSignupPage />,
   },
   {
     path: "/owner/dashboard",

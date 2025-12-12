@@ -20,7 +20,7 @@ interface DeleteAlertTypeDialogProps {
   open: boolean;
   alertType: AlertTypeDef | null;
   onClose: () => void;
-  onConfirm: (id: string) => void;
+  onConfirm: (type: string) => void;
 }
 
 export function DeleteAlertTypeDialog({
@@ -31,11 +31,13 @@ export function DeleteAlertTypeDialog({
 }: DeleteAlertTypeDialogProps) {
   function handleConfirm() {
     if (!alertType) return;
-    onConfirm(alertType.id);
+    const typeKey = alertType.type || alertType.key;
+    if (!typeKey) return;
+    onConfirm(typeKey);
     onClose();
   }
 
-  if (!alertType) return;
+  if (!alertType) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -49,10 +51,11 @@ export function DeleteAlertTypeDialog({
 
         <Card className="bg-slate-50">
           <CardHeader>
-            <CardTitle>{alertType.name}</CardTitle>
-            <CardDescription>
-              {alertType.key} · {alertType.category} ·{" "}
-              {<AlertSeverityBadge severity={alertType.defaultSeverity} />}
+            <CardTitle>{alertType.name || alertType.type || alertType.key}</CardTitle>
+            <CardDescription className="flex items-center gap-2">
+              <span>{alertType.type || alertType.key}</span>
+              <span>{alertType.category ?? "Unknown"}</span>
+              <AlertSeverityBadge severity={alertType.defaultSeverity || "INFO"} />
             </CardDescription>
           </CardHeader>
         </Card>

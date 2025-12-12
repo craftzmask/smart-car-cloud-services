@@ -33,4 +33,10 @@ router.patch(
   asyncErrorHandler(AuthController.updateRole)
 );
 
+// Refresh tokens
+router.post(
+  "/refresh",
+  asyncErrorHandler(AuthController.refresh)
+);
+
 module.exports = router;

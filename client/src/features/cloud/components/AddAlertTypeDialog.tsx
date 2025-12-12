@@ -32,7 +32,7 @@ interface AddAlertTypeDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (payload: {
-    key: string;
+    type: string;
     name: string;
     category: AlertCategory;
     defaultSeverity: AlertTypeDef["defaultSeverity"];
@@ -47,6 +47,7 @@ const CATEGORY_OPTIONS: AlertCategory[] = [
   "MAINTENANCE",
   "ANIMAL",
   "PASSENGER",
+  "UNKNOWN",
 ];
 
 export function AddAlertTypeDialog({
@@ -67,7 +68,7 @@ export function AddAlertTypeDialog({
     if (!keyValue.trim() || !name.trim()) return;
 
     onSave({
-      key: keyValue.trim(),
+      type: keyValue.trim(),
       name: name.trim(),
       category,
       defaultSeverity,
@@ -128,7 +129,9 @@ export function AddAlertTypeDialog({
                   <SelectGroup>
                     <SelectLabel>Select Category</SelectLabel>
                     {CATEGORY_OPTIONS.map((c) => (
-                      <SelectItem value={c}>{capitalize(c)}</SelectItem>
+                      <SelectItem key={c} value={c}>
+                        {capitalize(c)}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>

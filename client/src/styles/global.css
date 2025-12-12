@@ -117,4 +117,32 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  :root {
+    /* Vibrant but not neon – good for light backgrounds */
+    --chart-1: oklch(0.7 0.18 25); /* warm orange */
+    --chart-2: oklch(0.68 0.19 85); /* golden yellow */
+    --chart-3: oklch(0.68 0.16 135); /* lime green */
+    --chart-4: oklch(0.66 0.16 180); /* teal / cyan */
+    --chart-5: oklch(0.64 0.17 220); /* sky blue */
+    --chart-6: oklch(0.62 0.18 260); /* indigo */
+    --chart-7: oklch(0.64 0.17 300); /* violet */
+    --chart-8: oklch(0.66 0.16 340); /* magenta / pink */
+    --chart-9: oklch(0.6 0.13 40); /* muted amber */
+    --chart-10: oklch(0.58 0.13 200); /* muted blue */
+  }
+
+  .dark {
+    /* Slightly darker, lower lightness but still colorful on dark backgrounds */
+    --chart-1: oklch(0.72 0.16 25); /* warm orange */
+    --chart-2: oklch(0.7 0.17 85); /* golden yellow */
+    --chart-3: oklch(0.7 0.15 135); /* lime green */
+    --chart-4: oklch(0.72 0.15 180); /* teal / cyan */
+    --chart-5: oklch(0.74 0.16 220); /* sky blue */
+    --chart-6: oklch(0.76 0.16 260); /* indigo */
+    --chart-7: oklch(0.74 0.16 300); /* violet */
+    --chart-8: oklch(0.72 0.16 340); /* magenta / pink */
+    --chart-9: oklch(0.68 0.12 40); /* amber */
+    --chart-10: oklch(0.7 0.12 200); /* blue */
+  }
 }

@@ -1,6 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { capitalize } from "@/utils";
+import { Search } from "lucide-react";
 
 export type AlertSeverityFilter = "ALL" | "INFO" | "WARN" | "CRITICAL";
 
@@ -23,45 +28,42 @@ const severityOptions: AlertSeverityFilter[] = [
 export function AlertsFilterBar({
   severity,
   onChangeSeverity,
-  searchQuery,
   onChangeSearch,
-  totalCount,
   filteredCount,
 }: AlertsFilterBarProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-      {/* Left: severity buttons */}
-      <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden">
-        {severityOptions.map((option) => {
-          const isActive = severity === option;
-
-          return (
-            <Button
+    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+      <Tabs
+        value={severity}
+        onValueChange={(value) =>
+          onChangeSeverity(value as AlertSeverityFilter)
+        }
+      >
+        <TabsList>
+          {severityOptions.map((option) => (
+            <TabsTrigger
+              className="px-6 hover:cursor-pointer"
               key={option}
-              variant={isActive ? "default" : "ghost"}
-              className={
-                isActive ? "px-6" : "px-6 text-slate-700 hover:bg-slate-50"
-              }
-              onClick={() => onChangeSeverity(option)}
+              value={option}
             >
               {capitalize(option)}
-            </Button>
-          );
-        })}
-      </div>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
-      {/* Right: search + count */}
-      <div className="flex items-center gap-3">
-        <div className="text-sm text-slate-500 hidden md:block">
-          Showing {filteredCount} of {totalCount} alerts
-        </div>
-        <Input
-          value={searchQuery}
+      <InputGroup className="w-96">
+        <InputGroupInput
+          placeholder="Search by type or message"
           onChange={(e) => onChangeSearch(e.target.value)}
-          placeholder="Search alerts..."
-          className="h-9 w-60 border-slate-400 bg-white"
         />
-      </div>
+        <InputGroupAddon>
+          <Search />
+        </InputGroupAddon>
+        <InputGroupAddon align="inline-end">
+          {filteredCount} result{filteredCount === 1 ? "" : "s"}
+        </InputGroupAddon>
+      </InputGroup>
     </div>
   );
 }

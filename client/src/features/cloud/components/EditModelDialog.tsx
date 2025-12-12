@@ -126,7 +126,7 @@ export function EditModelDialog({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">Add Model</Button>
+              <Button type="submit">Save Changes</Button>
             </DialogFooter>
           </FieldGroup>
         </form>

@@ -140,7 +140,7 @@ class SubscriptionService {
     }
 
     async createSubscription(payload) {
-        const {userId, notificationTypes, alertTypes} = payload;
+        const {userId, notificationTypes, alertTypes, planId, planName, pricePerMonth} = payload;
 
         if (!userId) {
             throw new BadRequestError("User ID is required");
@@ -193,7 +193,10 @@ class SubscriptionService {
             const subscription = await Subscription.create({
                 userId,
                 notificationTypes: notificationTypeIds,
-                alertTypes: alertTypes || []
+                alertTypes: alertTypes || [],
+                planId: planId || null,
+                planName: planName || null,
+                pricePerMonth: pricePerMonth ?? null,
             });
 
             logger.info(`Subscription created for user ${userId}`);
@@ -219,6 +222,16 @@ class SubscriptionService {
         const subscription = await Subscription.findByPk(subscriptionId);
         if (!subscription) {
             throw new NotFoundError("Subscription not found");
+        }
+
+        if (updates.planId !== undefined) {
+            subscription.planId = updates.planId;
+        }
+        if (updates.planName !== undefined) {
+            subscription.planName = updates.planName;
+        }
+        if (updates.pricePerMonth !== undefined) {
+            subscription.pricePerMonth = updates.pricePerMonth;
         }
 
         if (updates.notificationTypes) {

@@ -32,6 +32,21 @@ Subscription.init(
       field: "notification_types",
       comment: "Array of notification_type IDs",
     },
+    planId: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      field: "plan_id",
+    },
+    planName: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: "plan_name",
+    },
+    pricePerMonth: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      field: "price_per_month",
+    },
     alertTypes: {
       type: DataTypes.ARRAY(DataTypes.STRING(50)),
       allowNull: true,

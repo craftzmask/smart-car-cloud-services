@@ -1,7 +1,7 @@
 import Error from "@/components/shared/Error";
 import Loading from "@/components/shared/Loading";
 import type { Alert, IoTDevice } from "@/domain/types";
-import { useOwnerDashboard } from "@/features/owner/hooks/useOwnerDashboard";
+import { useCloudDashboard } from "@/features/cloud/hooks/useCloudDashboard";
 import { CloudLayout } from "../components/CloudLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,8 +16,7 @@ import { AlertSeverityBadge } from "@/components/status/AlertSeverityBadge";
 import { capitalize } from "@/utils";
 
 export function CloudOverviewPage() {
-  const ownerId = "u-owner-1";
-  const { data, isLoading, error } = useOwnerDashboard(ownerId);
+  const { data, isLoading, error } = useCloudDashboard();
 
   if (isLoading) return <Loading />;
 
@@ -52,7 +51,7 @@ export function CloudOverviewPage() {
 
   return (
     <CloudLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader>
@@ -136,7 +135,7 @@ export function CloudOverviewPage() {
                           </span>
                         </TableCell>
                         <TableCell>{capitalize(alert.type)}</TableCell>
-                        <TableCell>{alert.message}</TableCell>
+                        <TableCell>{alert.description}</TableCell>
                         <TableCell className="text-right">
                           <AlertSeverityBadge severity={alert.severity} />
                         </TableCell>

@@ -1,7 +1,8 @@
 import Error from "@/components/shared/Error";
 import Loading from "@/components/shared/Loading";
-import type { OwnerDashboardData, AlertTypeDef } from "@/domain/types";
-import { useOwnerDashboard } from "@/features/owner/hooks/useOwnerDashboard";
+import type { AlertTypeDef } from "@/domain/types";
+import type { CloudDashboardData } from "@/features/cloud/api/cloudDashboardApi";
+import { useCloudDashboard } from "@/features/cloud/hooks/useCloudDashboard";
 import { CloudLayout } from "../components/CloudLayout";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import {
@@ -14,17 +15,21 @@ import {
 } from "@/components/ui/table";
 import { capitalize } from "@/utils";
 import { AlertSeverityBadge } from "@/components/status/AlertSeverityBadge";
-import { useQueryClient } from "@tanstack/react-query";
-import { saveOwnerDashboard } from "@/features/owner/api/ownerDashboardStorage";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AddAlertTypeDialog } from "../components/AddAlertTypeDialog";
 import { EditAlertTypeDialog } from "../components/EditAlertTypeDialog";
 import { DeleteAlertTypeDialog } from "../components/DeleteAlertTypeDialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import {
+  createAlertType,
+  deleteAlertType,
+  updateAlertType,
+} from "../api/alertTypesApi";
 
 export function CloudAlertTypesPage() {
-  const ownerId = "u-owner-1";
-  const { data, isLoading, error } = useOwnerDashboard(ownerId);
+  const { data, isLoading, error } = useCloudDashboard();
   const queryClient = useQueryClient();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -38,83 +43,114 @@ export function CloudAlertTypesPage() {
   const [deletingAlertType, setDeletingAlertType] =
     useState<AlertTypeDef | null>(null);
 
-  function handleAddAlertType(payload: {
-    key: string;
+  const addMutation = useMutation({
+    mutationFn: (input: Parameters<typeof createAlertType>[0]) =>
+      createAlertType({
+        ...input,
+        type: input.type.toLowerCase(),
+        defaultSeverity: input.defaultSeverity,
+      }),
+    onSuccess: (created, variables) => {
+      const merged: AlertTypeDef = {
+        ...created,
+        name: variables.name || created.name,
+      };
+      queryClient.setQueryData<CloudDashboardData | undefined>(
+        ["cloudDashboard"],
+        (oldData) =>
+          oldData
+            ? {
+                ...oldData,
+                alertTypes: [...oldData.alertTypes, merged],
+              }
+            : oldData
+      );
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: (input: { currentType: string; payload: Partial<AlertTypeDef> }) =>
+      updateAlertType(input.currentType, {
+        newType: input.payload.type || input.payload.key,
+        description: input.payload.description,
+        defaultSeverity: input.payload.defaultSeverity,
+        category: input.payload.category,
+        enabled: input.payload.enabled,
+        name: input.payload.name,
+      }),
+    onSuccess: (updated, variables) => {
+      queryClient.setQueryData<CloudDashboardData | undefined>(
+        ["cloudDashboard"],
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            alertTypes: oldData.alertTypes.map((t) => {
+              if ((t.type || t.key) !== variables.currentType) return t;
+              return {
+                ...t,
+                ...updated,
+                name: variables.payload.name || updated.name || t.name,
+              };
+            }),
+          };
+        }
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAlertType,
+    onSuccess: (deletedType) => {
+      queryClient.setQueryData<CloudDashboardData | undefined>(
+        ["cloudDashboard"],
+        (oldData) =>
+          oldData
+            ? {
+                ...oldData,
+                alertTypes: oldData.alertTypes.filter(
+                  (t) => (t.type || t.key) !== deletedType
+                ),
+              }
+            : oldData
+      );
+    },
+  });
+
+  async function handleAddAlertType(payload: {
+    type: string;
     name: string;
     category: AlertTypeDef["category"];
     defaultSeverity: AlertTypeDef["defaultSeverity"];
     description: string;
     enabled: boolean;
   }) {
-    const newType: AlertTypeDef = {
-      id: `alert-type-${Date.now()}`,
-      key: payload.key,
-      name: payload.name,
-      category: payload.category,
+    await addMutation.mutateAsync({
+      type: payload.type,
+      description: payload.description || payload.name,
       defaultSeverity: payload.defaultSeverity,
-      description: payload.description,
+      category: payload.category,
       enabled: payload.enabled,
-    };
-
-    queryClient.setQueryData<OwnerDashboardData | undefined>(
-      ["ownerDashboard", ownerId],
-      (oldData) => {
-        if (!oldData) return oldData;
-
-        const newData: OwnerDashboardData = {
-          ...oldData,
-          alertTypes: [...oldData.alertTypes, newType],
-        };
-
-        saveOwnerDashboard(newData);
-
-        return newData;
-      }
-    );
+      name: payload.name,
+    });
   }
 
-  function handleSaveEditedAlertType(updated: AlertTypeDef) {
-    queryClient.setQueryData<OwnerDashboardData | undefined>(
-      ["ownerDashboard", ownerId],
-      (oldData) => {
-        if (!oldData) return oldData;
-
-        const newAlertTypes = oldData.alertTypes.map((t) =>
-          t.id === updated.id ? updated : t
-        );
-
-        const newData: OwnerDashboardData = {
-          ...oldData,
-          alertTypes: newAlertTypes,
-        };
-
-        saveOwnerDashboard(newData);
-
-        return newData;
-      }
-    );
+  async function handleSaveEditedAlertType(updated: AlertTypeDef) {
+    const currentType =
+      editingAlertType?.type ||
+      editingAlertType?.key ||
+      updated.type ||
+      updated.key;
+    if (!currentType) return;
+    await editMutation.mutateAsync({
+      currentType,
+      payload: updated,
+    });
   }
 
-  function handleDeleteAlertType(id: string) {
-    queryClient.setQueryData<OwnerDashboardData | undefined>(
-      ["ownerDashboard", ownerId],
-      (oldData) => {
-        if (!oldData) return;
-
-        const newAlertTypes = oldData.alertTypes.filter(
-          (type) => type.id !== id
-        );
-
-        const newData = {
-          ...oldData,
-          alertTypes: newAlertTypes,
-        };
-
-        saveOwnerDashboard(newData);
-
-        return newData;
-      }
-    );
+  async function handleDeleteAlertType(type: string) {
+    if (!type) return;
+    await deleteMutation.mutateAsync(type);
   }
 
   if (isLoading) return <Loading />;
@@ -125,23 +161,7 @@ export function CloudAlertTypesPage() {
 
   return (
     <CloudLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold">Alert Types</h1>
-            <p className="text-sm text-slate-500">
-              Configure predefined audio-based alert types used across cars, IoT
-              devices, and AI models.
-            </p>
-          </div>
-          <div className="flex flex-col items-end text-sm text-slate-600">
-            <span className="uppercase tracking-wide text-slate-400">
-              TOTAL TYPES
-            </span>
-            <span className="font-medium">{alertTypes.length}</span>
-          </div>
-        </div>
-
+      <div className="p-6">
         {/* Models table */}
         <Card>
           <CardHeader>
@@ -169,46 +189,54 @@ export function CloudAlertTypesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {alertTypes.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell>{t.name}</TableCell>
-                      <TableCell>{capitalize(t.category)}</TableCell>
-                      <TableCell>
-                        <AlertSeverityBadge severity={t.defaultSeverity} />
-                      </TableCell>
-                      <TableCell>{t.description}</TableCell>
-                      <TableCell>
-                        {t.enabled ? (
-                          <span className="text-emerald-600 font-medium">
-                            Enabled
-                          </span>
-                        ) : (
-                          <span className="text-slate-500 font-medium">
-                            Disabled
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="flex gap-4 justify-end">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setEditingAlertType(t);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setDeletingAlertType(t);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {alertTypes.map((t) => {
+                    const name = t.name || capitalize(t.type || t.key || "");
+                    const category = t.category
+                      ? capitalize(t.category)
+                      : "Unknown";
+                    const severity = t.defaultSeverity || "INFO";
+                    const enabled = t.enabled ?? false;
+                    return (
+                      <TableRow key={t.id || t.type || t.key}>
+                        <TableCell>{name}</TableCell>
+                        <TableCell>{category}</TableCell>
+                        <TableCell>
+                          <AlertSeverityBadge severity={severity} />
+                        </TableCell>
+                        <TableCell>{t.description || "-"}</TableCell>
+                        <TableCell>
+                          {enabled ? (
+                            <span className="text-emerald-600 font-medium">
+                              Enabled
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 font-medium">
+                              Disabled
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="flex gap-4 justify-end">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setEditingAlertType(t);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setDeletingAlertType(t);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

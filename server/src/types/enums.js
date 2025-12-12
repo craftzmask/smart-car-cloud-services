@@ -49,6 +49,7 @@ const DEVICE_STATUS = {
 const DEVICE_TYPES = {
     CAMERA: "camera",
     MICROPHONE: "microphone",
+    AUDIO: "audio",
 };
 
 // Notification Types

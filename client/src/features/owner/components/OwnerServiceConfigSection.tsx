@@ -5,6 +5,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@/components/ui/item";
 import { Switch } from "@/components/ui/switch";
 import type { CarServiceConfig, IntelligenceServiceKey } from "@/domain/types";
 
@@ -41,23 +48,20 @@ export function OwnerServiceConfigSection({
         ) : (
           <div className="space-y-4">
             {configForCar.services.map((service) => (
-              <div
-                key={service.key}
-                className="flex items-center justify-between gap-4 border border-slate-100 rounded-md px-3 py-2.5 bg-slate-50/60"
-              >
-                <div>
-                  <p className="font-medium text-slate-900">{service.label}</p>
-                  <p className="text-sm text-slate-500">
-                    {service.description}
-                  </p>
-                </div>
-                <Switch
-                  checked={service.enabled}
-                  onCheckedChange={(checked) =>
-                    onToggleService(carId, service.key, checked)
-                  }
-                />
-              </div>
+              <Item variant="outline" className="bg-slate-50/60">
+                <ItemContent>
+                  <ItemTitle>{service.label}</ItemTitle>
+                  <ItemDescription>{service.description}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={service.enabled}
+                    onCheckedChange={(checked) =>
+                      onToggleService(carId, service.key, checked)
+                    }
+                  />
+                </ItemActions>
+              </Item>
             ))}
           </div>
         )}

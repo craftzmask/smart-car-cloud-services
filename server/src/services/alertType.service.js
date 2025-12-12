@@ -12,8 +12,29 @@ module.exports = {
      * List all alert types (with optional pagination/sort)
      */
     async list({limit = 100, offset = 0, order = [["type", "ASC"]]} = {}) {
-        const rows = await AlertType.findAll({limit, offset, order});
-        return rows.map(toPlain);
+        const rows = await AlertType.findAll({
+            limit,
+            offset,
+            order,
+            attributes: [
+                "type",
+                "name",
+                "description",
+                "defaultseverity",
+                "category",
+                "enabled",
+            ],
+        });
+        return rows.map((r) => ({
+            type: r.type,
+            name: r.name,
+            description: r.description,
+            defaultSeverity: r.defaultseverity
+                ? String(r.defaultseverity).toUpperCase()
+                : null,
+            category: r.category,
+            enabled: r.enabled,
+        }));
     },
 
     /**
@@ -29,15 +50,37 @@ module.exports = {
     /**
      * Create new alert type
      */
-    async create({type}) {
+    async create({type, description, defaultSeverity, category, enabled, name}) {
         if (!type || typeof type !== "string" || !type.trim()) {
             throw new BadRequestError("Alert Type required");
         }
         const normalized = type.toLowerCase().trim();
 
         try {
-            const created = await AlertType.create({type: normalized});
-            return toPlain(created);
+            logger.info("Creating alert type", {
+                type: normalized,
+                defaultSeverity,
+                category,
+                enabled,
+            });
+            const created = await AlertType.create({
+                type: normalized,
+                name: name || undefined,
+                description,
+                defaultSeverity: defaultSeverity ? String(defaultSeverity).toUpperCase() : null,
+                category,
+                enabled: enabled !== undefined ? enabled : true,
+            });
+            return {
+                type: created.type,
+                name: created.name,
+                description: created.description,
+                defaultSeverity: created.defaultSeverity
+                    ? String(created.defaultSeverity).toUpperCase()
+                    : null,
+                category: created.category,
+                enabled: created.enabled,
+            };
         } catch (err) {
             logger.error(err.message);
             throw err;
@@ -48,29 +91,64 @@ module.exports = {
      * Rename (update primary key 'type')
      * If your FK uses ON UPDATE CASCADE, child rows update automatically.
      */
-    async renameType(oldType, newType) {
-        const from = oldType.toLowerCase().trim();
-        const to = newType.toLowerCase().trim();
+    async renameType(oldType, payload = {}) {
+        const from = String(oldType || "").toLowerCase().trim();
+        if (!from) throw new BadRequestError("type is required");
 
-        if (from === to) {
-            const existing = await AlertType.findByPk(from);
-            if (!existing) throw new NotFoundError("AlertType not found");
-            return existing.toJSON();
-        }
+        const {
+            newType,
+            name,
+            description,
+            defaultSeverity,
+            category,
+            enabled,
+        } = payload;
 
         const row = await AlertType.findByPk(from);
         if (!row) throw new NotFoundError("AlertType not found");
 
-        const conflict = await AlertType.findByPk(to);
-        if (conflict) {
-            throw new BadRequestError("Alert conflict");
+        // handle rename
+        if (newType) {
+            const to = String(newType).toLowerCase().trim();
+            if (to !== from) {
+                const conflict = await AlertType.findByPk(to);
+                if (conflict) {
+                    throw new BadRequestError("Alert conflict");
+                }
+                row.type = to;
+            }
         }
 
-        // just update directly
-        row.type = to;
-        await row.save(); // if FK is ON UPDATE CASCADE, children update automatically
+        if (description !== undefined) row.description = description;
+        if (name !== undefined) row.set("name", name);
+        if (defaultSeverity !== undefined) {
+            row.set("defaultSeverity", String(defaultSeverity).toUpperCase());
+        }
+        if (category !== undefined) row.set("category", category);
+        if (enabled !== undefined) row.set("enabled", !!enabled);
 
-        return row.toJSON();
+        logger.info("Updating alert type", {
+            from,
+            newType: newType || from,
+            description,
+            defaultSeverity,
+            category,
+            enabled,
+        });
+
+        await row.save();
+        logger.info("Updated alert type persisted", row.toJSON());
+        const plain = row.toJSON();
+        return {
+            type: plain.type,
+            name: plain.name,
+            description: plain.description,
+            defaultSeverity: plain.defaultseverity
+                ? String(plain.defaultseverity).toUpperCase()
+                : null,
+            category: plain.category,
+            enabled: plain.enabled,
+        };
     },
 
 

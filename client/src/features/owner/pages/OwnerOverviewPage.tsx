@@ -7,13 +7,35 @@ import {
   CardTitle,
   CardContent,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import Loading from "@/components/shared/Loading";
 import Error from "@/components/shared/Error";
-import { capitalize, formatDate } from "@/utils";
+import {
+  capitalize,
+  filterAlertsByDays,
+  getLastNDaysRangeLabel,
+} from "@/utils";
+import {
+  Activity,
+  Bell,
+  BellRing,
+  Car as CarIcon,
+  TrendingUp,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { CarStatusBadge } from "@/components/status/CarStatusBadge";
+import { AlertLineChart, AlertTypeBarChart } from "@/components/shared/Chart";
+import { Alert } from "@/components/ui/alert";
+import { AlertPieChart } from "@/components/shared/Chart";
+import SimpleMap from "@/components/shared/Map";
+import { formatDate } from "@/utils";
+import { useAuth } from "@/auth/AuthContext";
 
 export function OwnerOverviewPage() {
-  const ownerId = "u-owner-1";
+  const { user } = useAuth();
+  const ownerId = user?.id || "me";
   const { data, isLoading, error } = useOwnerDashboard(ownerId);
 
   if (isLoading) return <Loading />;
@@ -21,10 +43,6 @@ export function OwnerOverviewPage() {
   if (error || !data) return <Error error={error} />;
 
   const { cars, alerts, devices, carLocations } = data;
-
-  const totalCars = cars.length;
-  const totalDevices = devices.length;
-  const totalAlerts = alerts.length;
 
   const criticalAlerts = alerts.filter(
     (alert) => alert.severity === "CRITICAL"
@@ -53,128 +71,182 @@ export function OwnerOverviewPage() {
     return { carAlerts, carDevices, location, lastAlert };
   }
 
+  const metrics = [
+    {
+      label: "Total Cars",
+      value: cars.length,
+      icon: CarIcon,
+      color: "text-purple-600",
+      trend: "+1",
+    },
+    {
+      label: "Active Alerts",
+      value: activeAlerts,
+      icon: Bell,
+      color: "text-blue-600",
+      trend: "+1",
+    },
+    {
+      label: "IoT Devices",
+      value: devices.length,
+      icon: Activity,
+      color: "text-orange-600",
+      trend: "+2",
+    },
+    {
+      label: "Critical Alerts",
+      value: criticalAlerts,
+      icon: BellRing,
+      color: "text-rose-600",
+      trend: "+1",
+    },
+  ];
+
   return (
-    <OwnerLayout>
+    <OwnerLayout
+      cars={cars}
+      ownerName={data.owner?.username || data.owner?.cognitoUsername}
+    >
       {() => (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase">
-                  Cars
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-2xl font-semibold text-slate-900">
-                {totalCars}
-              </CardContent>
-            </Card>
+            {metrics.map((metric, idx) => (
+              <Card key={idx}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>{metric.label}</CardTitle>
+                  <metric.icon className={`${metric.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{metric.value}</div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <TrendingUp className="h-3 w-3" />
+                    {metric.trend} from last month
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase">
-                  Devices
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-2xl font-semibold text-slate-900">
-                {totalDevices}
-              </CardContent>
-            </Card>
+          <Separator />
 
+          <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase">
-                  Active Alerts
-                </CardTitle>
+                <CardTitle>Alert Type Distribution (Last 7 Days)</CardTitle>
+                <CardDescription>{getLastNDaysRangeLabel(7)}</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-semibold text-slate-900">
-                  {activeAlerts}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {totalAlerts} total alerts
-                </p>
+                <AlertTypeBarChart alerts={filterAlertsByDays(alerts, 7)} />
               </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                  Showing total alerts for the last 7 days
+                </div>
+              </CardFooter>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-xs font-medium text-slate-500 uppercase">
-                  Critical Alerts
-                </CardTitle>
+                <CardTitle>Alert Type Distribution (Last 30 Days)</CardTitle>
+                <CardDescription>{getLastNDaysRangeLabel(30)}</CardDescription>
               </CardHeader>
-              <CardContent className="text-2xl font-semibold text-rose-600">
-                {criticalAlerts}
+              <CardContent>
+                <AlertTypeBarChart alerts={filterAlertsByDays(alerts, 30)} />
               </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                  Showing total alerts for the last 30 days
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Alert Volume Over Time (Last 7 Days)</CardTitle>
+                <CardDescription>{getLastNDaysRangeLabel(7)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AlertLineChart alerts={filterAlertsByDays(alerts, 7)} />
+              </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                  Showing total alerts for the last 7 days
+                </div>
+              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Alert Volume Over Time (Last 30 Days)</CardTitle>
+                <CardDescription>{getLastNDaysRangeLabel(30)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AlertLineChart alerts={filterAlertsByDays(alerts, 30)} />
+              </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="text-muted-foreground leading-none">
+                  Showing total alerts for the last 30 days
+                </div>
+              </CardFooter>
             </Card>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Cars overview & locations</CardTitle>
-              <CardDescription>Click each card to see details</CardDescription>
+              <CardTitle>My Cars</CardTitle>
+              <CardDescription>Cars overview & locations</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 {cars.map((car) => {
-                  const { carAlerts, carDevices, location, lastAlert } =
-                    getCarMetrics(car);
-
+                  const { location, lastAlert } = getCarMetrics(car);
                   return (
                     <div
                       key={car.id}
-                      className="border border-slate-20 rounded-lg p-3 bg-white flex flex-col gap-3"
+                      className="border border-slate-20 rounded-lg p-3 flex flex-col gap-3"
                     >
-                      {/* pseudo map view */}
-                      <div className="h-48 rounded-md bg-slate-200 flex items-center justify-center text-xs text-slate-600">
+                      {/* map view */}
+                      <div className="h-48 overflow-hidden rounded-lg border border-slate-200">
                         {location ? (
-                          <div className="text-center space-y-1">
-                            <div className="font-medium">
-                              Map preview (mock)
-                            </div>
-                            <div>
-                              Lat: {location.latitude.toFixed(3)}, Lng:{" "}
-                              {location.longitude.toFixed(3)}
-                            </div>
-                            <div className="text-slate-500">
+                          <>
+                            <SimpleMap carLocation={location} />
+                            <div className="mt-2 text-xs text-slate-600 text-center">
                               Last seen: {formatDate(location.lastSeenAt)}
                             </div>
-                          </div>
+                          </>
                         ) : (
-                          <span className="font-bold">No location data</span>
+                          <EmptyState message="No location data" />
                         )}
                       </div>
 
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-900">
-                            {car.make} {car.model}
-                          </p>
-                          <p className="text-sm text-slate-500">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg font-bold">
+                              {car.make} {car.model}
+                            </p>
+                            <CarStatusBadge status={car.status} />
+                          </div>
+                          <p className="text-muted-foreground">
                             VIN: {car.vin}
                           </p>
-                          <p className="text-sm text-slate-500">
-                            Status: {car.status}
-                          </p>
-                        </div>
-
-                        <div className="text-right text-sm text-slate-500">
-                          <p>
-                            Alerts:{" "}
-                            <span className="font-medium text-slate-900">
-                              {carAlerts.length}
-                            </span>
-                          </p>
-                          <p>
-                            Devices:{" "}
-                            <span className="font-medium text-slate-900">
-                              {carDevices.length}
-                            </span>
-                          </p>
-                          {lastAlert && (
-                            <p>
+                          {!lastAlert ? (
+                            <EmptyState message="Currently, no alerts in this vehicle" />
+                          ) : (
+                            <p className="text-muted-foreground">
                               Last alert:{" "}
                               <span className="font-medium">
-                                {capitalize(lastAlert.type)}
+                                {lastAlert.type
+                                  ? capitalize(String(lastAlert.type))
+                                  : (lastAlert as any).alertType
+                                  ? capitalize(
+                                      String((lastAlert as any).alertType)
+                                    )
+                                  : lastAlert.description
+                                  ? capitalize(String(lastAlert.description))
+                                  : "Unknown"}
                               </span>
                             </p>
                           )}

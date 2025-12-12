@@ -11,5 +11,9 @@ router.use("/cars", require("./car"));
 router.use("/service-configurations", require("./serviceConfig"));
 router.use("/subscriptions", require("./subscription"));
 router.use("/ml", require("./ml"));
+router.use("/owner", require("./owner"));
+router.use("/iot", require("./iot"));
+router.use("/cloud", require("./cloud"));
+router.use("/ai-models", require("./aiModel"));
 
 module.exports = router;

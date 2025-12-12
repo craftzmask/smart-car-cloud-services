@@ -18,8 +18,22 @@ const { StatusCodes, ReasonPhrases } = require("./utils/httpStatusCode");
 const ENV = (process.env.NODE_ENV || "dev").toLowerCase();
 
 // CORS configuration
+const allowedOrigins = (process.env.CORS_ORIGIN || "*")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || "*",
+  origin: (origin, callback) => {
+    // Allow non-browser or same-origin requests
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 };

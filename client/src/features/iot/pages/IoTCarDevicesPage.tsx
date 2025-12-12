@@ -1,11 +1,7 @@
 import Error from "@/components/shared/Error";
 import Loading from "@/components/shared/Loading";
-import {
-  type OwnerDashboardData,
-  type Car,
-  type IoTDevice,
-} from "@/domain/types";
-import { useOwnerDashboard } from "@/features/owner/hooks/useOwnerDashboard";
+import { type Car, type IoTDevice } from "@/domain/types";
+import { useIotDashboard } from "../hooks/useIotDashboard";
 import { useEffect, useState } from "react";
 import { IoTLayout } from "../components/IoTLayout";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -29,22 +25,25 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { AddDeviceDialog } from "../components/AddDeviceDialog";
-import { saveOwnerDashboard } from "@/features/owner/api/ownerDashboardStorage";
 import { EditDeviceDialog } from "../components/EditDeviceDialog";
 import { DeleteDeviceDialog } from "../components/DeleteDeviceDialog";
 import {
+  createIotDevice,
+  deleteIotDevice,
+  updateIotDevice,
+} from "../api/iotDevicesApi";
+import {
   addDevice,
-  deleteDevice,
   updateDevice,
-} from "@/features/owner/api/ownerDashboardMutations";
+  deleteDevice,
+} from "../api/iotDashboardMutations";
+import type { IotDashboardData } from "../api/iotDashboardApi";
 
 export function IoTCarDevicesPage() {
-  const ownerId = "u-owner-1";
   const queryClient = useQueryClient();
-  const { data, isLoading, error } = useOwnerDashboard(ownerId);
+  const { data, isLoading, error } = useIotDashboard();
 
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
-  const [devicesState, setDevicesState] = useState<IoTDevice[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -54,61 +53,42 @@ export function IoTCarDevicesPage() {
   const [deletingDevice, setDeletingDevice] = useState<IoTDevice | null>(null);
 
   useEffect(() => {
-    if (data) {
-      setDevicesState(data.devices);
-      if (!selectedCarId && data.cars.length > 0) {
-        setSelectedCarId(data.cars[0].id);
-      }
+    if (!selectedCarId && data && data.cars.length > 0) {
+      setSelectedCarId(data.cars[0].id);
     }
   }, [data, selectedCarId]);
 
-  function handleAddDevice(deviceWithoutId: Omit<IoTDevice, "id">) {
-    const newDevice: IoTDevice = {
-      id: `dev-${Date.now()}`,
-      ...deviceWithoutId,
-    };
-
-    setDevicesState((prev) => [...prev, newDevice]);
-
-    queryClient.setQueryData<OwnerDashboardData | undefined>(
-      ["ownerDashboard", ownerId],
-      (oldData) => {
-        if (!oldData) return oldData;
-        const newData = addDevice(oldData, newDevice);
-        saveOwnerDashboard(newData); // Simulate backend update here
-        return newData;
-      }
-    );
+  async function handleAddDevice(deviceWithoutId: Omit<IoTDevice, "id">) {
+    try {
+      const created = await createIotDevice(deviceWithoutId);
+      queryClient.setQueryData<IotDashboardData | undefined>(["iotDashboard"], (oldData) =>
+        oldData ? addDevice(oldData, created) : oldData
+      );
+    } catch (err) {
+      console.error("Failed to create device", err);
+    }
   }
 
-  function handleSaveEditedDevice(update: IoTDevice) {
-    setDevicesState((prev) =>
-      prev.map((d) => (d.id === update.id ? update : d))
-    );
-
-    queryClient.setQueryData<OwnerDashboardData | undefined>(
-      ["ownerDashboard", ownerId],
-      (oldData) => {
-        if (!oldData) return oldData;
-        const newData = updateDevice(oldData, update);
-        saveOwnerDashboard(newData); // Simulate update backend here
-        return newData;
-      }
-    );
+  async function handleSaveEditedDevice(update: IoTDevice) {
+    try {
+      const updated = await updateIotDevice(update.id, update);
+      queryClient.setQueryData<IotDashboardData | undefined>(["iotDashboard"], (oldData) =>
+        oldData ? updateDevice(oldData, updated) : oldData
+      );
+    } catch (err) {
+      console.error("Failed to update device", err);
+    }
   }
 
-  function handleDeleteDevice(deviceId: string) {
-    setDevicesState((prev) => prev.filter((d) => d.id !== deviceId));
-
-    queryClient.setQueryData<OwnerDashboardData | undefined>(
-      ["ownerDashboard", ownerId],
-      (oldData) => {
-        if (!oldData) return oldData;
-        const newData = deleteDevice(oldData, deviceId);
-        saveOwnerDashboard(newData);
-        return newData;
-      }
-    );
+  async function handleDeleteDevice(deviceId: string) {
+    try {
+      const deletedId = await deleteIotDevice(deviceId);
+      queryClient.setQueryData<IotDashboardData | undefined>(["iotDashboard"], (oldData) =>
+        oldData ? deleteDevice(oldData, deletedId) : oldData
+      );
+    } catch (err) {
+      console.error("Failed to delete device", err);
+    }
   }
 
   if (isLoading) return <Loading />;
@@ -119,7 +99,7 @@ export function IoTCarDevicesPage() {
 
   const selectedCar: Car | undefined = cars.find((c) => c.id === selectedCarId);
 
-  const carDevices = devicesState.filter((d) => d.carId === selectedCarId);
+  const carDevices = data.devices.filter((d) => d.carId === selectedCarId);
 
   return (
     <IoTLayout>

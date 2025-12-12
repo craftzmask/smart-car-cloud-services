@@ -15,7 +15,7 @@ router.post(
     asyncErrorHandler(AlertTypeController.create)
 );
 
-router.patch(
+router.put(
     "/:type",
     asyncErrorHandler(AlertTypeController.rename)
 );

@@ -11,7 +11,6 @@ const logger = require("../utils/logger");
 const REGION = process.env.AWS_REGION || "us-west-1";
 const ENDPOINT = process.env.SAGEMAKER_ENDPOINT || "";
 
-// Reuse one client per process
 const smClient = new SageMakerRuntimeClient({
   region: REGION,
 });
@@ -27,7 +26,6 @@ const normalizeProbabilities = (probObj) => {
 };
 
 const normalizeResult = (raw) => {
-  // Handle array payloads like [json_string, content_type] or [dict, content_type]
   if (Array.isArray(raw)) {
     if (raw.length && typeof raw[0] === "string") {
       try {
@@ -48,7 +46,9 @@ const normalizeResult = (raw) => {
     return { success: false, raw };
   }
 
-  const probabilities = normalizeProbabilities(raw.all_probs || raw.probabilities);
+  const probabilities = normalizeProbabilities(
+    raw.all_probs || raw.probabilities
+  );
 
   let predictedClass = raw.class || raw.predicted_class;
   if (!predictedClass && probabilities) {
@@ -57,14 +57,21 @@ const normalizeResult = (raw) => {
   }
 
   let confidence = raw.confidence;
-  if ((confidence === undefined || confidence === null) && predictedClass && probabilities) {
+  if (
+    (confidence === undefined || confidence === null) &&
+    predictedClass &&
+    probabilities
+  ) {
     confidence = probabilities[predictedClass];
   }
 
   return {
     success: raw.success !== false,
     predictedClass: predictedClass || null,
-    confidence: confidence !== undefined && confidence !== null ? Number(confidence) : null,
+    confidence:
+      confidence !== undefined && confidence !== null
+        ? Number(confidence)
+        : null,
     probabilities,
     raw,
   };

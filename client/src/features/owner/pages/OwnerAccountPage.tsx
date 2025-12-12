@@ -2,7 +2,13 @@ import Loading from "@/components/shared/Loading";
 import { useOwnerDashboard } from "../hooks/useOwnerDashboard";
 import Error from "@/components/shared/Error";
 import { OwnerLayout } from "../components/OwnerLayout";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { OwnerPlanCard } from "../components/OwnerPlanCard";
 import { OwnerNotificationPreferencesSection } from "../components/OwnerNotificationPreferencesSection";
 import type {
@@ -19,9 +25,11 @@ import {
   updateChannel,
   updateSubcriptionPlan,
 } from "../api/ownerDashboardMutations";
+import { useAuth } from "@/auth/AuthContext";
 
 export function OwnerAccountPage() {
-  const ownerId = "u-owner-1";
+  const { user } = useAuth();
+  const ownerId = user?.id || "me";
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useOwnerDashboard(ownerId);
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
@@ -67,6 +75,8 @@ export function OwnerAccountPage() {
   if (error || !data) return <Error error={error} />;
 
   const { owner, cars, subscription, devices, alerts } = data;
+  const displayName = user?.name;
+  const displayEmail = user?.email;
 
   const totalCars = cars.length;
   const totalDevices = devices.length;
@@ -74,84 +84,55 @@ export function OwnerAccountPage() {
   const criticalAlerts = alerts.filter((a) => a.severity === "CRITICAL").length;
 
   return (
-    <OwnerLayout>
+    <OwnerLayout
+      cars={cars}
+      ownerName={owner?.username || owner?.cognitoUsername}
+    >
       {() => (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Account info */}
-          <Card>
+          <Card className="w-[50%]">
             <CardHeader>
               <CardTitle>Account</CardTitle>
+              <CardDescription>Personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-slate-700">
               <div>
                 <p className="text-slate-500">Name</p>
-                <p className="font-medium">{owner.name}</p>
+                <p className="font-medium">{displayName}</p>
               </div>
               <div>
                 <p className="text-slate-500">Email</p>
-                <p className="font-medium">{owner.email}</p>
+                <p className="font-medium">{displayEmail || "N/A"}</p>
               </div>
-              <div>
-                <p className="text-slate-500">Current plan</p>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Current Plan</p>
                 <p className="font-medium">{subscription.planName}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Usage summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Usage Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Cars</span>
-                <span className="font-medium text-slate-900">{totalCars}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-slate-500">Devices</span>
-                <span className="font-medium text-slate-900">
-                  {totalDevices}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-slate-500">Alerts</span>
-                <span className="font-medium text-slate-900">
-                  {totalAlerts}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-slate-500">Critical Alerts</span>
-                <span className="font-medium text-rose-600">
-                  {criticalAlerts}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Plan + notification preferences side by side */}
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="w-[50%]">
             <OwnerPlanCard
               subscription={subscription}
               onUpgrade={() => setIsPlanDialogOpen(true)}
             />
+          </div>
 
+          <div className="w-[50%]">
             <OwnerNotificationPreferencesSection
               planId={subscription.planId}
               preferences={subscription.notificationPreferences}
               onToggleChannel={handleToggleChannel}
             />
-
-            <PlanUpgradeDialog
-              open={isPlanDialogOpen}
-              currentPlanId={subscription.planId}
-              onClose={() => setIsPlanDialogOpen(false)}
-              onConfirm={handleConfirmPlan}
-            />
           </div>
+
+          <PlanUpgradeDialog
+            open={isPlanDialogOpen}
+            currentPlanId={subscription.planId}
+            onClose={() => setIsPlanDialogOpen(false)}
+            onConfirm={handleConfirmPlan}
+          />
         </div>
       )}
     </OwnerLayout>

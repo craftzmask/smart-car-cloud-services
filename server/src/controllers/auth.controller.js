@@ -26,12 +26,15 @@ class AuthController {
   }
 
   async login(request, response) {
-    const { username, password } = request.body;
+    const { username, password, loginAs } = request.body;
     if (!username || !password) {
       throw new BadRequestError("Username and password are required");
     }
+    if (!loginAs) {
+      throw new BadRequestError("loginAs is required");
+    }
 
-    const result = await AuthService.login({ username, password });
+    const result = await AuthService.login({ username, password, loginAs });
     return new OK({ message: "Login successful", data: result }).send(response);
   }
 
@@ -104,6 +107,15 @@ class AuthController {
     const { role } = request.params;
     const result = await AuthService.getUsersByRole(role);
     return new OK({ message: `Users with role '${role}' retrieved successfully`, data: result }).send(response);
+  }
+
+  async refresh(request, response) {
+    const { refreshToken } = request.body || {};
+    if (!refreshToken) {
+      throw new BadRequestError("refreshToken is required");
+    }
+    const result = await AuthService.refreshTokens({ refreshToken });
+    return new OK({ message: "Token refreshed", data: result }).send(response);
   }
 }
 
